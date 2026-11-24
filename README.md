@@ -11,7 +11,7 @@
 
 <p><a href="https://github.com/sayeemabdullah/herdr-ranch/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/sayeemabdullah/herdr-ranch/ci.yml?branch=master&style=flat-square&label=CI"></a> <a href="https://herdr.dev"><img alt="herdr layout, herdr-app 0.1.16" src="https://img.shields.io/badge/herdr%20layout-0.1.16-222?style=flat-square"></a> <a href="https://nodejs.org"><img alt="Node 22 or newer, for the tests" src="https://img.shields.io/badge/node-%E2%89%A5%2022-339933?style=flat-square&logo=node.js&logoColor=white"></a> <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-0969da?style=flat-square"></a></p>
 
-[Install](#install) · [What you get](#what-you-get) · [The cast](#the-cast) · [What it runs](#what-it-runs) · [Develop](#develop) · [Contributing](CONTRIBUTING.md)
+[Install](#install) · [Update](#update) · [What you get](#what-you-get) · [The cast](#the-cast) · [What it runs](#what-it-runs) · [Develop](#develop) · [Contributing](CONTRIBUTING.md)
 
 <br>
 
@@ -75,6 +75,18 @@ Looking at an animal (focusing its pane) resets it to "Resting". Sub-agents show
 - **Spend.** Each card shows its session cost; the board adds up today's.
 - **Toasts** like "Clover: baa! All done", with the animal's picture, and system banners when herdr is in the background.
 
+### Space emblems
+
+Every space gets one of seven arch-badge emblems, the first one nobody else has. The sky changes with your clock (dawn 5-8, day 8-17, dusk 17-20, night), and a star twinkles in the corner while an agent in that space is working.
+
+<table>
+<tr><th></th><th>barn</th><th>silo</th><th>haystack</th><th>pond</th><th>windmill</th><th>orchard</th><th>fence</th></tr>
+<tr><th>Dawn</th><td align="center"><img src="mods/meadows/emblems/barn-dawn.svg" width="48" alt="barn, dawn"></td><td align="center"><img src="mods/meadows/emblems/silo-dawn.svg" width="48" alt="silo, dawn"></td><td align="center"><img src="mods/meadows/emblems/haystack-dawn.svg" width="48" alt="haystack, dawn"></td><td align="center"><img src="mods/meadows/emblems/pond-dawn.svg" width="48" alt="pond, dawn"></td><td align="center"><img src="mods/meadows/emblems/windmill-dawn.svg" width="48" alt="windmill, dawn"></td><td align="center"><img src="mods/meadows/emblems/orchard-dawn.svg" width="48" alt="orchard, dawn"></td><td align="center"><img src="mods/meadows/emblems/fence-dawn.svg" width="48" alt="fence, dawn"></td></tr>
+<tr><th>Day</th><td align="center"><img src="mods/meadows/emblems/barn.svg" width="48" alt="barn, day"></td><td align="center"><img src="mods/meadows/emblems/silo.svg" width="48" alt="silo, day"></td><td align="center"><img src="mods/meadows/emblems/haystack.svg" width="48" alt="haystack, day"></td><td align="center"><img src="mods/meadows/emblems/pond.svg" width="48" alt="pond, day"></td><td align="center"><img src="mods/meadows/emblems/windmill.svg" width="48" alt="windmill, day"></td><td align="center"><img src="mods/meadows/emblems/orchard.svg" width="48" alt="orchard, day"></td><td align="center"><img src="mods/meadows/emblems/fence.svg" width="48" alt="fence, day"></td></tr>
+<tr><th>Dusk</th><td align="center"><img src="mods/meadows/emblems/barn-dusk.svg" width="48" alt="barn, dusk"></td><td align="center"><img src="mods/meadows/emblems/silo-dusk.svg" width="48" alt="silo, dusk"></td><td align="center"><img src="mods/meadows/emblems/haystack-dusk.svg" width="48" alt="haystack, dusk"></td><td align="center"><img src="mods/meadows/emblems/pond-dusk.svg" width="48" alt="pond, dusk"></td><td align="center"><img src="mods/meadows/emblems/windmill-dusk.svg" width="48" alt="windmill, dusk"></td><td align="center"><img src="mods/meadows/emblems/orchard-dusk.svg" width="48" alt="orchard, dusk"></td><td align="center"><img src="mods/meadows/emblems/fence-dusk.svg" width="48" alt="fence, dusk"></td></tr>
+<tr><th>Night</th><td align="center"><img src="mods/meadows/emblems/barn-night.svg" width="48" alt="barn, night"></td><td align="center"><img src="mods/meadows/emblems/silo-night.svg" width="48" alt="silo, night"></td><td align="center"><img src="mods/meadows/emblems/haystack-night.svg" width="48" alt="haystack, night"></td><td align="center"><img src="mods/meadows/emblems/pond-night.svg" width="48" alt="pond, night"></td><td align="center"><img src="mods/meadows/emblems/windmill-night.svg" width="48" alt="windmill, night"></td><td align="center"><img src="mods/meadows/emblems/orchard-night.svg" width="48" alt="orchard, night"></td><td align="center"><img src="mods/meadows/emblems/fence-night.svg" width="48" alt="fence, night"></td></tr>
+</table>
+
 ### Top bar, panes and footer
 
 A **Herdr Ranch** sign whose barn follows the clock; gold-boxed pixel tabs; a **ranch strip** in the tab bar that rotates through who is working, tasks done today and Scout on watch (and, in red, whoever needs you); a pane header with the animal's name; a pixel fence over Settings and Add machine. Dialogs like *Close space?* use the same colours with a gold main button.
@@ -109,6 +121,22 @@ The script copies the layout, two themes and seven mods into `~/.config/herdr-ap
 - Pick it in **Settings → Look → Layout** (it shows as *Herdr-Ranch*; herdr builds that name from the file name).
 - Images load lazily: right after an install the first frame can show empty slots for a few seconds.
 - Optional system banners on macOS: `brew install terminal-notifier`, then open its app once and allow notifications.
+
+### Update
+
+Herdr Ranch has no automatic updates. To get a newer version, pull it and run the installer again:
+
+```sh
+cd herdr-ranch
+git pull
+./install.sh
+```
+
+- Read [CHANGELOG.md](CHANGELOG.md) first to see what changed.
+- The installer is safe to re-run: it copies the new files over the old ones and moves whatever it replaces to `backups/herdr-ranch-<time>/`, so a mod you edited in `~/.config/herdr-app` is backed up, not merged. Copy your changes back from there if you want to keep them.
+- It switches the window to Herdr-Ranch again; `RANCH_NO_SWITCH=1 ./install.sh` updates without switching.
+- herdr reloads the mods by itself, so no restart is needed. The first frame can show empty picture slots for a few seconds.
+- Your animals' names and colours, the board's counts and your settings are kept: they live in herdr's shared values and the mods' local storage, not in the installed files.
 
 ### Uninstall
 
