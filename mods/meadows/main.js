@@ -61,7 +61,6 @@ const REALMS_KEY = "meadows.emblems";
 // Each running server is a barnyard critter, kept per port; a server that ended wears the red badge.
 const CRITTERS = ["pig", "cat", "frog", "hedgehog"];
 const CRITTERS_KEY = "meadows.critters";
-const fence = () => div().w_full().h(9).flex_none().overflow_hidden().child(image("mods/ranch-chrome/fence.svg").w(480).h(9).flex_none());
 function critterPicture(name, state) {
   const sprite = (file) => image(`mods/flock/sprites/${file}.svg`).w(32).h(32).flex_none();
   if (state !== "running") return sprite(`${name}-blocked`);
@@ -669,8 +668,7 @@ export default class Spaces extends View {
         .child(still.loop("opacity", { from: 7, to: -6, period, easing: "linear" }))
         .child(sprite(next).absolute().top(0).left(0).loop("opacity", { from: -6, to: 7, period, easing: "linear" }));
     };
-    return v_flex().flex_none().pt(6).pb(4).mx(-8)
-      .child(fence())
+    return v_flex().flex_none().pt(10).pb(4).mx(-8)
       .child(h_flex().h(31).pl(16).pr(10).items_center().text_size(11.5).text_color(t.dim).child("Reviewer"))
       .children(this.reviewers.map(({ w }) => h_flex().id(`reviewer-${w.id}`).mx(8).my(2).px(8).h(50).gap(10).items_center().rounded(8)
         .border(1).border_color(w.active ? t.input : t.border)
@@ -739,8 +737,7 @@ export default class Spaces extends View {
   serversSection(t) {
     const critters = this.critters();
     const sp = spaces();
-    return v_flex().flex_none().pt(6).pb(4).mx(-8)
-      .child(fence())
+    return v_flex().flex_none().pt(10).pb(4).mx(-8)
       .child(h_flex().h(31).pl(16).pr(10).items_center().justify_between().text_size(11.5).text_color(t.dim)
         .child("Servers").child(div().text_color(t.dim).child(String(this.servers.length))))
       .children(this.gone.map((g) => h_flex().id(`gone-${g.pid}`).mx(8).my(2).px(8).h(46).gap(10).items_center().rounded(8)
@@ -783,15 +780,15 @@ export default class Spaces extends View {
     for (const g of groups) {
       const mainPath = (g.trees.find((x) => x.main) ?? g.trees[0]).path;
       rows.push(h_flex().h(24).pl(16).pr(10).items_center().justify_between().text_size(11).text_color(t.dim).child(g.name)
-        .child(div().id(`tree-new-${mainPath}`).px(6).h(20).flex().items_center().rounded(5).text_size(10.5)
+        .child(div().id(`tree-new-${mainPath}`).size(22).flex().items_center().justify_center().rounded(6).text_size(13)
           .cursor_pointer().hover((el) => el.bg(t.hover).text_color(t.foreground))
           .on_click(() => openOverlay({ mod: "worktree", kind: "dialog", width: 460, height: 280, props: { folder: mainPath, machine: "", argv: ["claude"] } }))
-          .child("+ worktree + agent")));
+          .child("+")));
       g.trees.forEach((wt, n) => rows.push(h_flex().id(`tree-${wt.path}`).mx(8).px(8).h(28).gap(7).items_center().rounded(7)
         .cursor_pointer().hover((el) => el.bg(t.hover))
         .on_click(() => (wt.space ? run("space.select", { id: wt.space }) : run("space.new", { folder: wt.path, machine: "" })))
         .child(div().text_color(t.dim).text_size(11.5).child(n === g.trees.length - 1 ? "\u2514\u2500" : "\u251c\u2500"))
-        .child(svg(`mods/flock/icons/tree-${wt.main ? 5 : wt.space ? 3 : 1}.svg`).size(14).flex_none())
+        .child(svg("mods/workspace-chrome/branch.svg").size(13).flex_none().text_color(wt.space ? t.accent : t.dim))
         .child(div().flex_1().min_w(0).truncate().text_color(wt.space ? t.foreground : t.muted).child(wt.branch))
         .when(Boolean(this.prs[`${g.name} ${wt.branch}`]?.pr), (el) => {
           const pr = this.prs[`${g.name} ${wt.branch}`].pr;
@@ -805,8 +802,7 @@ export default class Spaces extends View {
         })
         .child(div().text_size(10.5).flex_none().text_color(wt.space ? t.accent : t.dim).child(wt.main ? "main" : wt.space ? "open" : "+ open"))));
     }
-    return v_flex().flex_none().pt(6).pb(4).mx(-8)
-      .child(fence())
+    return v_flex().flex_none().pt(10).pb(4).mx(-8)
       .child(h_flex().h(31).pl(16).pr(10).items_center().text_size(11.5).text_color(t.dim).child("Worktrees"))
       .children(rows);
   }
