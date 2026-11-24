@@ -70,6 +70,26 @@ class SpriteTests(unittest.TestCase):
             for pose in ("-blocked", "-done"):
                 self.assertNotEqual(base, read(os.path.join(SPRITES, f"{i}{pose}.svg")), f"{i}{pose}")
 
+    def test_every_server_critter_has_its_standing_working_resting_and_red_badge_files(self):
+        for name in sprites.CRITTERS:
+            self.assertNotIn(name, sprites.ANIMALS)
+            for pose in ("", "-2", "-idle", "-blocked"):
+                self.assertTrue(os.path.exists(os.path.join(SPRITES, f"{name}{pose}.svg")), f"{name}{pose}")
+            self.assertNotEqual(read(os.path.join(SPRITES, f"{name}.svg")), read(os.path.join(SPRITES, f"{name}-2.svg")), name)
+            for suffix, grid in sprites.pose_grids(name).items():
+                self.assertEqual(len(grid), 24, f"{name}{suffix}")
+                for y in range(6):
+                    if suffix in ("", "-2", "-idle"):
+                        self.assertEqual(grid[y][:6], "......", f"{name}{suffix} row {y}")
+
+    def test_button_icons_are_square_grids_of_known_colours(self):
+        for name, grid in sprites.ui_icon_grids().items():
+            self.assertEqual({len(r) for r in grid}, {len(grid)}, name)
+            self.assertTrue(os.path.exists(os.path.join(ROOT, "mods", "flock", "icons", f"{name}.svg")), name)
+            for row in grid:
+                for ch in row:
+                    self.assertTrue(ch == "." or ch in sprites.PALETTE, f"{name} {ch}")
+
     def test_alternate_colours_differ(self):
         for a in COMMON:
             self.assertNotEqual(read(os.path.join(SPRITES, f"{a}.svg")), read(os.path.join(SPRITES, f"{a}-alt.svg")), a)

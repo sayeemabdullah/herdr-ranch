@@ -5,8 +5,10 @@
 
 import { View, div, svg, image } from "gpui-kit";
 import { v_flex, h_flex, ScrollHandle } from "gpui-base";
-import { spaces, machines, panes, terminals, run, openOverlay, exec, hc, theme, shared, setShared, watchFolder, window, layout } from "herdr";
+import { spaces, machines, panes, terminals, run, openOverlay, exec, hc, theme, shared, setShared, watchFolder, window, layout, notify } from "herdr";
 import { reviewerSpaces } from "./reviewer.js";
+import { parseListeners, parseCwds, parseUptimes, parseCommands, pickServers, trackGone, shortCommand } from "./servers.js";
+import { parseWorktrees, worktreeGroups, parsePr } from "./worktrees.js";
 
 function find(node, id) {
   if (node?.id === id) return node;
@@ -56,6 +58,16 @@ const MARK = { ansi6: "#22a99a", ansi3: "#e3814f", ansi4: "#5b8def", ansi5: "#8b
 
 const REALMS = ["barn", "silo", "haystack", "pond", "windmill", "orchard", "fence"];
 const REALMS_KEY = "meadows.emblems";
+// Each running server is a barnyard critter, kept per port; a server that ended wears the red badge.
+const CRITTERS = ["pig", "cat", "frog", "hedgehog"];
+const CRITTERS_KEY = "meadows.critters";
+function critterPicture(name, state) {
+  const sprite = (file) => image(`mods/flock/sprites/${file}.svg`).w(32).h(32).flex_none();
+  if (state !== "running") return sprite(`${name}-blocked`);
+  return div().relative().w(32).h(32).flex_none()
+    .child(sprite(name).loop("opacity", { from: 7, to: -6, period: 900, easing: "linear" }))
+    .child(sprite(`${name}-2`).absolute().top(0).left(0).loop("opacity", { from: -6, to: 7, period: 900, easing: "linear" }));
+}
 // A 20x20 emblem drawn 1:1 stays crisp.
 const EMBLEM_SIZE = 20;
 // The emblems follow your clock like Pixel HQ's windows: dawn, day, dusk, night (day has no suffix).
@@ -135,6 +147,82 @@ export default class Spaces extends View {
     cx.timer.every(300000, (cx) => cx.notify());
     // Refresh only when the refs could have changed (see `due`).
     cx.timer.every(250, (cx) => this.checkNew(cx));
+    // The Servers and Worktrees sections (local spaces only): what listens in your projects, and each repo's worktrees.
+    this.servers = []; // [{ pid, command, port, place, up }]
+    this.trees = []; // [{ name, trees: [{ path, branch, main }] }]
+    this.stopping = null; // { pid, until }: a stop waiting for its second press
+    this.stoppedPids = new Set(); // servers stopped from here: not a surprise
+    this.gone = []; // servers that ended by themselves, kept a minute with a Restart button
+    this.prs = {}; // `${repo} ${branch}` -> { pr, at }: the branch's pull request and its CI
+    this.listing = false;
+    cx.timer.after(3000, (cx) => this.refreshTrees(cx));
+    this.refreshServers(cx);
+    cx.timer.after(8000, (cx) => this.refreshPrs(cx));
+    cx.timer.every(120000, (cx) => this.refreshPrs(cx));
+    cx.timer.every(20000, (cx) => this.refreshTrees(cx));
+    cx.timer.every(5000, (cx) => this.refreshServers(cx));
+  }
+
+  // Each local repo's worktrees (git worktree list), de-duplicated by repo.
+  async refreshTrees(cx) {
+    try {
+      const repos = new Map();
+      for (const g of Object.values(this.git)) {
+        if (!g) continue;
+        const [on, common] = JSON.parse(g.repo);
+        if (!on) repos.set(common, g.name);
+      }
+      const out = [];
+      for (const [common, name] of repos) {
+        const cwd = common.endsWith("/.git") ? common.slice(0, -5) : common;
+        const r = await exec("git", ["worktree", "list", "--porcelain"], { cwd });
+        if (r.code === 0) out.push({ name, trees: parseWorktrees(r.stdout) });
+      }
+      if (JSON.stringify(out) !== JSON.stringify(this.trees)) { this.trees = out; cx.notify(); }
+    } catch {}
+  }
+
+  // Listening TCP ports whose process runs inside a space or a worktree, with how long they have been up.
+  async refreshServers(cx) {
+    if (this.listing || narrow()) return;
+    this.listing = true;
+    try {
+      const sp = spaces(), ps = panes();
+      const places = sp.filter((s) => !s.machine).map((s) => ({ id: s.id, name: s.name, path: place(s, ps) })).filter((p) => p.path);
+      for (const g of this.trees) for (const t of g.trees) if (!places.some((p) => p.path === t.path)) places.push({ id: null, name: t.branch, path: t.path });
+      const listen = await exec("lsof", ["-nP", "-iTCP", "-sTCP:LISTEN", "-Fpcn"]);
+      const listeners = parseListeners(listen.stdout);
+      const pids = [...new Set(listeners.map((l) => l.pid))];
+      const cwds = pids.length ? parseCwds((await exec("lsof", ["-a", "-d", "cwd", "-Fpn", "-p", pids.join(",")])).stdout) : {};
+      const picked = pickServers(listeners, cwds, places);
+      const ups = picked.length ? parseUptimes((await exec("ps", ["-o", "pid=,etime=", "-p", picked.map((x) => x.pid).join(",")])).stdout) : {};
+      const cmds = picked.length ? parseCommands((await exec("ps", ["-o", "pid=,command=", "-p", picked.map((x) => x.pid).join(",")])).stdout) : {};
+      const next = picked.map((x) => ({ ...x, up: ups[x.pid] ?? "", cmd: cmds[x.pid] ?? "" }));
+      // A server that ended by itself: a toast, and a card with Restart for a minute.
+      const tracked = trackGone(this.servers, next, this.stoppedPids, this.gone, Date.now());
+      for (const g of tracked.fresh) {
+        notify({ title: `${g.place.name || "A server"} :${g.port} stopped`, body: `${g.command} ended. Restart it from the Servers list.`, level: "warning" });
+      }
+      const goneChanged = JSON.stringify(tracked.gone) !== JSON.stringify(this.gone);
+      this.gone = tracked.gone;
+      if (goneChanged || JSON.stringify(next) !== JSON.stringify(this.servers)) { this.servers = next; cx.notify(); }
+    } catch {
+      // lsof missing or slow: keep what the list showed.
+    }
+    this.listing = false;
+  }
+
+  // Open the server's page, or stop it: the first press asks, the second (within 4 seconds) sends SIGTERM.
+  stop(server, cx) {
+    if (this.stopping?.pid === server.pid && Date.now() < this.stopping.until) {
+      this.stopping = null;
+      this.stoppedPids.add(server.pid);
+      exec("kill", ["-TERM", String(server.pid)]).then(() => this.refreshServers(cx)).catch(() => {});
+    } else {
+      this.stopping = { pid: server.pid, until: Date.now() + 4000 };
+      cx.timer.after(4100, (cx) => cx.notify());
+    }
+    cx.notify();
   }
 
   checkNew(cx) {
@@ -594,6 +682,131 @@ export default class Spaces extends View {
         .child(div().text_color(tone(t, w.status)).child(glyph(w.status)))));
   }
 
+  // Which critter each listed port wears: the first one nobody else has, kept in shared state.
+  critters() {
+    const live = new Set([...this.servers, ...this.gone].map((x) => x.port));
+    const stored = shared(CRITTERS_KEY) ?? {};
+    const map = Object.fromEntries(Object.entries(stored).filter(([port]) => live.has(Number(port))));
+    let changed = Object.keys(map).length !== Object.keys(stored).length;
+    for (const port of [...live].sort((a, b) => a - b)) {
+      if (map[port]) continue;
+      const taken = new Set(Object.values(map));
+      map[port] = CRITTERS.find((c) => !taken.has(c)) ?? CRITTERS[taken.size % CRITTERS.length];
+      changed = true;
+    }
+    if (changed) setShared(CRITTERS_KEY, map);
+    return map;
+  }
+
+  // Run the stopped server's command again, in a tab you can see, in the folder it ran in.
+  restart(g, cx) {
+    const args = { folder: g.cwd, argv: ["/bin/zsh", "-lc", g.cmd], name: `:${g.port}` };
+    if (g.place.id) run("tab.new", { ...args, space: g.place.id });
+    else run("space.new", { folder: g.cwd, machine: "", argv: args.argv });
+    this.gone = this.gone.filter((x) => x.pid !== g.pid);
+    cx.notify();
+  }
+
+  // Each non-main worktree's pull request and CI, from gh (a repo without GitHub, or no gh, is left out).
+  async refreshPrs(cx) {
+    if (this.prsBusy) return;
+    this.prsBusy = true;
+    try {
+      let changed = false;
+      for (const g of this.trees) {
+        for (const wt of g.trees) {
+          if (wt.main || wt.detached) continue;
+          const key = `${g.name} ${wt.branch}`;
+          const had = this.prs[key];
+          if (had?.failed && Date.now() - had.at < 600000) continue;
+          try {
+            const r = await exec("gh", ["pr", "list", "--head", wt.branch, "--state", "all", "--limit", "1", "--json", "number,state,url,isDraft,statusCheckRollup"], { cwd: wt.path, timeout: 15000 });
+            const entry = r.code === 0 ? { pr: parsePr(r.stdout), at: Date.now() } : { pr: null, failed: true, at: Date.now() };
+            if (JSON.stringify(entry.pr) !== JSON.stringify(had?.pr)) changed = true;
+            this.prs[key] = entry;
+          } catch { this.prs[key] = { pr: null, failed: true, at: Date.now() }; }
+        }
+      }
+      if (changed) cx.notify();
+    } catch {}
+    this.prsBusy = false;
+  }
+
+  // A section like Reviewer: the servers running in your projects, nicely. Click one to open it in the browser;
+  // the x asks "Stop?" and a second press ends the process.
+  serversSection(t) {
+    const critters = this.critters();
+    const sp = spaces();
+    return v_flex().flex_none().pt(10).pb(4).mx(-8)
+      .child(h_flex().h(31).pl(16).pr(10).items_center().justify_between().text_size(11.5).text_color(t.dim)
+        .child("Servers").child(div().text_color(t.dim).child(String(this.servers.length))))
+      .children(this.gone.map((g) => h_flex().id(`gone-${g.pid}`).mx(8).my(2).px(8).h(46).gap(10).items_center().rounded(8)
+        .border(1).border_color(t.blocked ?? t.border)
+        .child(critterPicture(critters[g.port] ?? CRITTERS[0], "gone"))
+        .child(v_flex().flex_1().min_w(0)
+          .child(h_flex().gap(6).items_baseline().child(div().font_semibold().text_color(t.blocked ?? t.foreground).child(`:${g.port}`)).child(div().truncate().text_color(t.muted).child("stopped")))
+          .child(div().truncate().text_size(11).text_color(t.dim).child(shortCommand(g.cmd))))
+        .child(div().id(`restart-${g.pid}`).px(8).h(24).flex().items_center().rounded(6).flex_none().text_size(11).text_color(t.accent ?? t.foreground)
+          .cursor_pointer().hover((el) => el.bg(t.raised ?? t.hover))
+          .on_click((_e, cx) => this.restart(g, cx)).child(h_flex().gap(5).items_center().child(image("mods/flock/icons/ui-play.svg").w(12).h(12).flex_none()).child("Restart")))))
+      .children(this.servers.map((sv) => {
+        const asking = this.stopping?.pid === sv.pid && Date.now() < this.stopping.until;
+        return h_flex().id(`server-${sv.pid}`).mx(8).my(2).px(8).h(50).gap(10).items_center().rounded(8)
+          .border(1).border_color(t.border)
+          .cursor_pointer().hover((el) => el.bg(t.hover))
+          .on_click((_e, cx) => cx.open_url(`http://localhost:${sv.port}`))
+          .child(critterPicture(critters[sv.port] ?? CRITTERS[0], "running"))
+          .child(v_flex().flex_1().min_w(0)
+            .child(h_flex().gap(6).items_baseline()
+              .child(div().font_semibold().text_color(t.accent ?? t.foreground).child(`:${sv.port}`))
+              .child(div().truncate().text_color(t.foreground).child(sv.command)))
+            .child(div().truncate().text_size(11).text_color(t.dim).child([sv.place.name, sv.up].filter(Boolean).join(" \u00b7 "))))
+          .child(div().id(`stop-${sv.pid}`).px(6).h(24).flex().items_center().justify_center().rounded(6).flex_none()
+            .text_size(11).text_color(asking ? t.blocked : t.dim).hover((el) => el.bg(t.raised ?? t.hover))
+            .on_mouse_down("left", (_e, cx) => cx.stop_propagation())
+            .on_click((_e, cx) => { cx.stop_propagation(); this.stop(sv, cx); })
+            .child(asking ? "Stop?" : image("mods/flock/icons/ui-x.svg").w(12).h(12).flex_none()));
+      }));
+  }
+
+  // Worktrees of every repo that has more than one: the branch, and a gold dot when a space is open there.
+  // Click opens that space, or makes one in the worktree's folder.
+  worktreesSection(t) {
+    const sp = spaces(), ps = panes();
+    const groups = worktreeGroups(this.trees, sp.filter((s) => !s.machine).map((s) => ({ id: s.id, path: place(s, ps) })));
+    this.hasTrees = groups.length > 0;
+    if (!groups.length) return null;
+    const rows = [];
+    for (const g of groups) {
+      const mainPath = (g.trees.find((x) => x.main) ?? g.trees[0]).path;
+      rows.push(h_flex().h(24).pl(16).pr(10).items_center().justify_between().text_size(11).text_color(t.dim).child(g.name)
+        .child(div().id(`tree-new-${mainPath}`).size(22).flex().items_center().justify_center().rounded(6).text_size(13)
+          .cursor_pointer().hover((el) => el.bg(t.hover).text_color(t.foreground))
+          .on_click(() => openOverlay({ mod: "worktree", kind: "dialog", width: 460, height: 280, props: { folder: mainPath, machine: "", argv: ["claude"] } }))
+          .child(image("mods/flock/icons/ui-plus.svg").w(12).h(12).flex_none())));
+      g.trees.forEach((wt, n) => rows.push(h_flex().id(`tree-${wt.path}`).mx(8).px(8).h(28).gap(7).items_center().rounded(7)
+        .cursor_pointer().hover((el) => el.bg(t.hover))
+        .on_click(() => (wt.space ? run("space.select", { id: wt.space }) : run("space.new", { folder: wt.path, machine: "" })))
+        .child(div().text_color(t.dim).text_size(11.5).child(n === g.trees.length - 1 ? "\u2514\u2500" : "\u251c\u2500"))
+        .child(image(`mods/flock/icons/tree-${wt.main ? 5 : wt.space ? 3 : 1}.svg`).w(16).h(16).flex_none())
+        .child(div().flex_1().min_w(0).truncate().text_color(wt.space ? t.foreground : t.muted).child(wt.branch))
+        .when(Boolean(this.prs[`${g.name} ${wt.branch}`]?.pr), (el) => {
+          const pr = this.prs[`${g.name} ${wt.branch}`].pr;
+          const tone2 = pr.state === "merged" ? "#a78bfa" : pr.state === "closed" ? t.dim : pr.ci === "fail" ? t.blocked : pr.ci === "pass" ? t.done : pr.ci === "pending" ? t.working : t.muted;
+          const mark = pr.state === "merged" ? "merged" : pr.state === "closed" ? "closed" : pr.ci === "fail" ? "\u2715" : pr.ci === "pass" ? "\u2713" : pr.ci === "pending" ? "\u2026" : pr.state === "draft" ? "draft" : "";
+          return el.child(div().id(`pr-${wt.path}`).px(5).h(18).flex().items_center().rounded(5).flex_none().text_size(10.5).text_color(tone2)
+            .hover((e2) => e2.bg(t.raised ?? t.hover))
+            .on_mouse_down("left", (_e, cx) => cx.stop_propagation())
+            .on_click((_e, cx) => { cx.stop_propagation(); if (pr.url) cx.open_url(pr.url); })
+            .child(`#${pr.number} ${mark}`.trim()));
+        })
+        .child(div().text_size(10.5).flex_none().text_color(wt.space ? t.accent : t.dim).child(wt.main ? "main" : wt.space ? "open" : "+ open"))));
+    }
+    return v_flex().flex_none().pt(10).pb(4).mx(-8)
+      .child(h_flex().h(31).pl(16).pr(10).items_center().text_size(11.5).text_color(t.dim).child("Worktrees"))
+      .children(rows);
+  }
+
   render() {
     const t = theme();
     const collapsed = narrow();
@@ -630,6 +843,8 @@ export default class Spaces extends View {
         .on_mouse_up("left", (_e, cx) => { this.pressed = null; cx.notify(); })
         .children(list)
         // The Reviewer section follows the last space instead of sinking to the bottom of the block.
-        .when(!collapsed && this.reviewers?.length > 0, (el) => el.child(this.reviewerSection(t))));
+        .when(!collapsed && this.reviewers?.length > 0, (el) => el.child(this.reviewerSection(t)))
+        .when(!collapsed && this.servers.length + this.gone.length > 0, (el) => el.child(this.serversSection(t)))
+        .when(!collapsed, (el) => { const w = this.worktreesSection(t); return w ? el.child(w) : el; }));
   }
 }

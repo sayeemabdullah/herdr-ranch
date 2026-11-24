@@ -142,36 +142,56 @@ def main(shot_path=None):
     img.paste(win, (wx, wy), win)
     d = ImageDraw.Draw(img)
 
-    # callouts
+    # callouts: (heading, body, new?)
     items = [
-        ("Every agent is an animal", "A random pixel animal and name for each one. Three rare: fox, owl, dragon."),
-        ("They live their day", "Nap when idle, ring the alarm, throw confetti when done. A tree grows."),
-        ("Hand off with Memory share", "Press the arrow on a card to send its recent screen to another agent. You read the preview first."),
-        ("Scout reviews your PRs", "A sheepdog gets its own Reviewer section when the PR panel is open."),
+        ("Every agent is an animal", "A random pixel animal and name each. Three rare ones.", False),
+        ("They live their day", "Nap, ring the alarm, throw confetti when done. A tree grows.", False),
+        ("Servers and worktrees", "A critter for each dev server: open, stop, restart. Branches as pixel trees with PR and CI status.", True),
+        ("Hand off with Memory share", "Send an agent's recent screen to another. You read it first.", False),
+        ("Scout reviews your PRs", "A sheepdog gets its own Reviewer section.", False),
     ]
-    fh, fb = font(29, HEAVY), font(20, MED)
-    y = 292
-    for i, (head, body) in enumerate(items, 1):
+    fh, fb, ftag = font(29, HEAVY), font(20, MED), font(15, HEAVY)
+    y = 290
+    for i, (head, body, fresh) in enumerate(items, 1):
         d.ellipse((60, y, 106, y + 46), fill=GOLD)
         n = str(i)
         d.text((83 - d.textlength(n, font=fh) / 2, y + 3), n, font=fh, fill=DEEP)
-        d.text((124, y - 2), head, font=fh, fill=CREAM)
+        d.text((124, y - 2), head, font=fh, fill=GOLD if fresh else CREAM)
+        if fresh:
+            hw = d.textlength(head, font=fh)
+            d.rounded_rectangle((124 + hw + 12, y + 4, 124 + hw + 62, y + 26), 11, fill=GOLD)
+            d.text((124 + hw + 22, y + 6), "NEW", font=ftag, fill=DEEP)
         words, line, ly = body.split(), "", y + 36
+        lines = 1
         for wd in words:
             t = (line + " " + wd).strip()
             if d.textlength(t, font=fb) > 635:
                 d.text((124, ly), line, font=fb, fill=(226, 190, 214))
-                line, ly = wd, ly + 26
+                line, ly, lines = wd, ly + 26, lines + 1
             else:
                 line = t
         d.text((124, ly), line, font=fb, fill=(226, 190, 214))
-        y += 106
-    ft = font(19, BOLD)
-    d.text((60, 722), "Also: needs-you bell  ·  find  ·  what a task changed  ·  honest spend", font=ft, fill=GOLD)
-    d.text((60, 748), "chiptune sounds  ·  day and night emblems  ·  CPU / RAM / disk  ·  2 themes", font=ft, fill=GOLD)
+        y += 82 if lines == 1 else 108
+    ft = font(18, BOLD)
+    for k, line in enumerate((
+        "Also: update button  \u00b7  needs-you bell  \u00b7  find  \u00b7  what a task changed",
+        "honest spend  \u00b7  sounds  \u00b7  day and night emblems  \u00b7  CPU/RAM/disk  \u00b7  2 themes",
+    )):
+        d.text((60, 726 + k * 24), line, font=ft, fill=GOLD)
+    # the Update button itself, as it looks in the status bar
+    label = "Update to v0.2.0"
+    fu = font(17, BOLD)
+    pw = d.textlength(label, font=fu) + 44
+    d.rounded_rectangle((668, 724, 668 + pw, 752), 8, fill=GOLD)
+    arrow = sprites.ui_icon_grids()["ui-up"]
+    for ay, row in enumerate(arrow):
+        for ax, ch in enumerate(row):
+            if ch != ".":
+                d.rectangle((680 + ax * 2, 731 + ay * 2, 680 + ax * 2 + 1, 731 + ay * 2 + 1), fill=DEEP)
+    d.text((704, 726), label, font=fu, fill=DEEP)
 
     # fence and the herd
-    fy = 918
+    fy = 926
     for fx in range(0, W, 64):
         d.rectangle((fx + 20, fy - 40, fx + 34, fy + 55), fill=(122, 78, 44))
         d.rectangle((fx + 20, fy - 40, fx + 34, fy - 34), fill=(166, 112, 66))
