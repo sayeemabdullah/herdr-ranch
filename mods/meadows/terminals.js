@@ -1,5 +1,8 @@
 // The Terminals section: plain terminals (not agents, not the PR Panel) listed under Spaces and Reviewer.
 
+// The name `ranch` gives the tab it opens (bin/ranch).
+const VSCODE_TAB = "VS Code";
+
 /** "~" for the home folder, "~/x" under it, "…/c/d" for a deep path, a path elsewhere as it is, "" for none. */
 export function shortPath(path, home) {
   if (!path) return "";
@@ -18,7 +21,7 @@ export function shortPath(path, home) {
  */
 export function terminalRows(spaces, panes, home, reviewerIds, names = {}) {
   const spaceOfTab = new Map();
-  (spaces ?? []).forEach((space, order) => (space.tabs ?? []).forEach((tab) => spaceOfTab.set(tab.id, { name: space.name, id: space.id, order })));
+  (spaces ?? []).forEach((space, order) => (space.tabs ?? []).forEach((tab) => spaceOfTab.set(tab.id, { name: space.name, id: space.id, order, tab: tab.name })));
   const rows = [];
   (panes ?? []).forEach((p, index) => {
     const space = spaceOfTab.get(p.tab);
@@ -28,7 +31,8 @@ export function terminalRows(spaces, panes, home, reviewerIds, names = {}) {
       pane: p.pane,
       terminal: p.terminal,
       name: names?.[p.terminal] || p.name || p.program?.name || p.title || "terminal",
-      program: p.program?.name || p.title || "terminal",
+      // The tab `ranch` opens is named VS Code; the process under it is an Electron helper, which says little.
+      program: space.tab === VSCODE_TAB ? "VS Code" : p.program?.name || p.title || "terminal",
       state: shell ? "resting" : "running",
       space: space.name,
       folder: shortPath(p.cwd, home),

@@ -87,3 +87,15 @@ test("terminalRows uses the pet name, says what is running, and marks a bare she
   const noName = rows.find((r) => r.pane === "p6");
   assert.equal(noName.name, "web dev");
 });
+
+test("the tab ranch opens, named VS Code, is called VS Code, not the Electron process under it", () => {
+  const sp = [{ id: "s1", name: "api-server", tabs: [{ id: "a", name: "VS Code" }, { id: "b", name: "main" }] }];
+  const electron = { key: "program", name: "Electron Helper", shell: false, agent: false, icon: null };
+  const pn = [
+    { pane: "p1", tab: "a", terminal: "t1", title: "", name: null, cwd: "/Users/me", program: electron },
+    { pane: "p2", tab: "b", terminal: "t2", title: "", name: null, cwd: "/Users/me", program: electron },
+  ];
+  const rows = terminalRows(sp, pn, "/Users/me", new Set(), {});
+  assert.equal(rows.find((r) => r.pane === "p1").program, "VS Code");
+  assert.equal(rows.find((r) => r.pane === "p2").program, "Electron Helper");
+});
