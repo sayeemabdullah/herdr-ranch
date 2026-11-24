@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- **A new preview picture.** `preview.png` is now a banner: the pixel title, what the layout is in one line, three callouts, the real window and the twelve animals on a fence. It is drawn by `tools/preview_banner.py`. The plain dark screenshot moved to `assets/preview-dusk.png` for the theme section.
+
 ## 0.1.0
 
 First release. A herdr layout where every coding agent is its own pixel animal. Built for herdr-app 0.1.16 on macOS.
