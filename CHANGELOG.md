@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- **Update button.** A gold "Update to vX.Y.Z" pill in the status bar when a newer release is out; one click opens a tab that downloads it and runs its installer. `install.sh` now leaves a `herdr-ranch.version` file for it to compare.
+- **Update button.** The status bar shows `Ranch v0.1.0` (click to check now); when a newer release is out it becomes a gold "Update to vX.Y.Z" button; one click opens a tab that downloads it and runs its installer. `install.sh` now leaves a `herdr-ranch.version` file for it to compare.
 - **New pictures** of the Servers and Worktrees sections in the README, the window screenshots and the gallery banner.
 - **Barnyard critters for servers.** A pig, cat, frog or hedgehog for each running server (red badge when it ended). The sections use the same plain cards, colours and headings as Reviewer and the spaces.
 - **Servers section.** Dev servers running in your spaces and worktrees, as cards with the port, program, space and uptime. Click to open in the browser; the x asks "Stop?" and a second press ends the process.

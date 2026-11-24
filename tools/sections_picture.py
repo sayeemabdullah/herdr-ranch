@@ -54,6 +54,8 @@ def icon(name, size, light=False):
     pal = dict(sprites.PALETTE)
     if name == "ui-x":
         pal["w"] = "#586b44" if light else "#f4eaf2"
+    if name == "ui-up":
+        pal["o"] = "#f7f5e6" if light else "#33062b"
     return grid_image(grid, size / len(grid), pal)
 
 
@@ -128,15 +130,29 @@ class Pen:
         return yy
 
 
+def update_pill(pen, x1, y, text="Update to v0.2.0"):
+    """The gold (green in the light theme) Update button as it sits in the status bar, left of CPU."""
+    c = pen.c
+    w = pen.d.textlength(text, font=font(11 * pen.s, "Semibold")) / pen.s + 32
+    x0 = x1 - w
+    pen.box(x0, y, x1, y + 17, 5, fill=c["gold"])
+    pen.paste(icon("ui-up", 10 * pen.s, pen.light), x0 + 7, y + 3)
+    pen.text(x0 + 21, y + 2.5, text, 11, c["on_gold"], "Semibold")
+
+
 def patch_screenshot(path, theme):
     img = Image.open(path).convert("RGB")
     s = img.size[0] / 1600
-    bg = img.getpixel((round(100 * s), round(300 * s)))
+    bg = img.getpixel((round(113 * s), round(392 * s)))  # blank sidebar, below where the cards go
     ImageDraw.Draw(img).rectangle((0, round(230 * s), round(226 * s), round(405 * s)), fill=bg)
     pen = Pen(img, s, theme)
     pen.heading(0, 227, 236, "Servers", "2")
     pen.server_card(7, 220, 254, 3000, "node", "api-server · 2h", "pig")
-    pen.server_card(7, 220, 300, 5173, "vite", "web-app · 41m", "cat")
+    pen.server_card(7, 220, 300, 5173, "vite", "web-app \u00b7 41m", "cat")
+    # the Update button as it looks when a newer release is out, left of CPU in the status bar
+    bar = img.getpixel((round(1030 * s), round(996 * s)))
+    ImageDraw.Draw(img).rectangle((round(1030 * s), round(985 * s), round(1172 * s), round(1005 * s)), fill=bar)
+    update_pill(pen, 1170, 987)
     img.save(path)
 
 
@@ -163,6 +179,9 @@ def main():
     patch_screenshot(os.path.join(ROOT, "preview-light.png"), "light")
     os.makedirs(os.path.join(ROOT, "assets"), exist_ok=True)
     standalone(os.path.join(ROOT, "assets", "servers-worktrees.png"))
+    # the status bar with the Update button, for the README
+    bar = Image.open(os.path.join(ROOT, "layouts", "Herdr-Ranch.png")).convert("RGB")
+    bar.crop((560, 972, 1600, 1006)).resize((2080, 68), Image.LANCZOS).save(os.path.join(ROOT, "assets", "update-button.png"))
 
 
 if __name__ == "__main__":

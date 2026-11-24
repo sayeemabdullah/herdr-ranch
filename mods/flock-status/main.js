@@ -1,6 +1,6 @@
 import { View, div, svg, image } from "gpui-kit";
 import { h_flex } from "gpui-base";
-import { spaces, agents, theme, run, window, keys, setBadge, checking, exec, appHome, home, readTextFile } from "herdr";
+import { spaces, agents, theme, run, window, keys, setBadge, checking, exec, appHome, home, readTextFile, notify } from "herdr";
 import { RELEASE_API, isNewer, parseRelease, updateScript } from "./update.js";
 import { parseCpu, parseMemMac, parseMemLinux, parseDisk, formatGB } from "./vitals.js";
 
@@ -33,6 +33,7 @@ export default class WorkspaceStatus extends View {
   init(_props, cx) {
     this.vitals = { cpu: null, mem: null, disk: null };
     this.update = null; // a newer Herdr Ranch release: { tag, version, url }
+    this.version = null; // the installed release, from herdr-ranch.version
     if (checking()) return;
     // A look at GitHub's latest release a few seconds after start, then every 6 hours (at most once an hour per window).
     cx.timer.after(20000, (cx) => this.checkUpdate(cx));
@@ -42,12 +43,12 @@ export default class WorkspaceStatus extends View {
   }
 
   // The release GitHub calls the latest, against the version install.sh left in Herdr's folder.
-  async checkUpdate(cx) {
+  async checkUpdate(cx, now = false) {
     try {
       const last = Number(localStorage.getItem("ranch.update.at") ?? 0);
       let found = null;
       try { found = JSON.parse(localStorage.getItem("ranch.update.found") ?? "null"); } catch { /* ignore */ }
-      if (!found || Date.now() - last > 3600 * 1000) {
+      if (!found || now || Date.now() - last > 3600 * 1000) {
         const r = await exec("curl", ["-fsSL", "--max-time", "10", "-H", "Accept: application/vnd.github+json", "-H", "User-Agent: herdr-ranch-update-check", RELEASE_API], { timeout: 15000 });
         found = r.code === 0 ? parseRelease(r.stdout) : found;
         localStorage.setItem("ranch.update.at", String(Date.now()));
@@ -56,6 +57,9 @@ export default class WorkspaceStatus extends View {
       const local = await readTextFile(`${appHome()}/herdr-ranch.version`).catch(() => null);
       // No version file (installed before updates existed): nothing to compare, so no button until the next install.
       const next = found && local && isNewer(local, found.version) ? found : null;
+      const version = local ? local.trim() : null;
+      if (version !== this.version) { this.version = version; cx.notify(); }
+      if (now && !next) notify({ title: version ? `Herdr Ranch v${version} is up to date` : "Herdr Ranch: could not tell the installed version", level: "info" });
       if (JSON.stringify(next) !== JSON.stringify(this.update)) { this.update = next; cx.notify(); }
     } catch { /* offline: try again later */ }
   }
@@ -149,6 +153,8 @@ export default class WorkspaceStatus extends View {
         .bg(t.solid ?? "#f2c744").text_color(t.solid_foreground ?? "#33062b").text_size(11.5).font_semibold()
         .cursor_pointer().hover(s => s.opacity(0.9)).on_click(() => this.runUpdate())
         .child(image("mods/flock/icons/ui-up.svg").w(11).h(11).flex_none()).child(`Update to ${this.update.tag}`)))
+      .when(!this.update && Boolean(this.version), el => el.child(div().id("ranch-version").text_size(11).text_color(t.dim).cursor_pointer()
+        .hover(s => s.text_color(t.foreground)).on_click((_e, cx) => this.checkUpdate(cx, true)).child(`Ranch v${this.version}`)))
       .child(this.meter(t, "CPU", this.vitals.cpu, this.vitals.cpu == null ? "--" : `${this.vitals.cpu}%`))
       .child(this.meter(t, "RAM", this.vitals.mem && Math.round((100 * this.vitals.mem.used) / this.vitals.mem.total),
         this.vitals.mem ? `${formatGB(this.vitals.mem.used)}/${formatGB(this.vitals.mem.total)}G` : "--"))
