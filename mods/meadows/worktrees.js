@@ -28,3 +28,20 @@ export function worktreeGroups(repos, spaces) {
     trees: r.trees.map((t) => ({ ...t, space: open.get(t.path.replace(/\/+$/, "")) ?? null })),
   }));
 }
+
+/**
+ * `gh pr list --head <branch> --state all --limit 1 --json number,state,url,isDraft,statusCheckRollup` ->
+ * { number, state: "open" | "draft" | "merged" | "closed", ci: "pass" | "fail" | "pending" | null, url } or null.
+ */
+export function parsePr(json) {
+  let list;
+  try { list = JSON.parse(json); } catch { return null; }
+  const pr = Array.isArray(list) ? list[0] : null;
+  if (!pr || !pr.number) return null;
+  const state = pr.state === "MERGED" ? "merged" : pr.state === "CLOSED" ? "closed" : pr.isDraft ? "draft" : "open";
+  const checks = Array.isArray(pr.statusCheckRollup) ? pr.statusCheckRollup : [];
+  const bad = (c) => ["FAILURE", "ERROR", "TIMED_OUT", "CANCELLED", "STARTUP_FAILURE", "ACTION_REQUIRED"].includes(c.conclusion ?? c.state);
+  const waiting = (c) => (c.status && c.status !== "COMPLETED") || ["PENDING", "EXPECTED"].includes(c.state);
+  const ci = !checks.length ? null : checks.some(bad) ? "fail" : checks.some(waiting) ? "pending" : "pass";
+  return { number: pr.number, state, ci, url: typeof pr.url === "string" ? pr.url : null };
+}

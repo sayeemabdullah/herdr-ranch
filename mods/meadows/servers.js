@@ -56,7 +56,34 @@ export function pickServers(listeners, cwds, places) {
     const place = (places ?? []).filter((p) => p.path && inside(cwd, p.path)).sort((a, b) => b.path.length - a.path.length)[0];
     if (!place) continue;
     const have = byPid.get(l.pid);
-    if (!have || l.port < have.port) byPid.set(l.pid, { pid: l.pid, command: l.command, port: l.port, place });
+    if (!have || l.port < have.port) byPid.set(l.pid, { pid: l.pid, command: l.command, port: l.port, place, cwd });
   }
   return [...byPid.values()].sort((a, b) => a.port - b.port);
+}
+
+/** `ps -o pid=,command=` -> { pid: "node server.js" }. */
+export function parseCommands(out) {
+  const cmds = {};
+  for (const line of String(out ?? "").split("\n")) {
+    const m = /^\s*(\d+)\s+(.+?)\s*$/.exec(line);
+    if (m) cmds[Number(m[1])] = m[2];
+  }
+  return cmds;
+}
+
+const GONE_FOR = 60000;
+
+/**
+ * Servers that went away since last time. `prev`/`next`: the server lists, `stopped`: pids the person stopped
+ * here (not a surprise), `gone`: the stopped-on-its-own list kept so far ([{ ...server, at }]).
+ * Returns { gone, fresh }: the list to show (each kept a minute, dropped if its port is listening again)
+ * and the ones that just disappeared, to toast.
+ */
+export function trackGone(prev, next, stopped, gone, now) {
+  const alive = new Set((next ?? []).map((s) => s.pid));
+  const ports = new Set((next ?? []).map((s) => s.port));
+  const fresh = (prev ?? []).filter((s) => !alive.has(s.pid) && !(stopped ?? new Set()).has(s.pid) && s.cmd);
+  const kept = [...(gone ?? []), ...fresh.map((s) => ({ ...s, at: now }))]
+    .filter((g) => now - g.at < GONE_FOR && !ports.has(g.port));
+  return { gone: kept, fresh };
 }

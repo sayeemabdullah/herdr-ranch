@@ -5,10 +5,10 @@
 
 import { View, div, svg, image } from "gpui-kit";
 import { v_flex, h_flex, ScrollHandle } from "gpui-base";
-import { spaces, machines, panes, terminals, run, openOverlay, exec, hc, theme, shared, setShared, watchFolder, window, layout } from "herdr";
+import { spaces, machines, panes, terminals, run, openOverlay, exec, hc, theme, shared, setShared, watchFolder, window, layout, notify } from "herdr";
 import { reviewerSpaces } from "./reviewer.js";
-import { parseListeners, parseCwds, parseUptimes, pickServers } from "./servers.js";
-import { parseWorktrees, worktreeGroups } from "./worktrees.js";
+import { parseListeners, parseCwds, parseUptimes, parseCommands, pickServers, trackGone } from "./servers.js";
+import { parseWorktrees, worktreeGroups, parsePr } from "./worktrees.js";
 
 function find(node, id) {
   if (node?.id === id) return node;
@@ -141,9 +141,14 @@ export default class Spaces extends View {
     this.servers = []; // [{ pid, command, port, place, up }]
     this.trees = []; // [{ name, trees: [{ path, branch, main }] }]
     this.stopping = null; // { pid, until }: a stop waiting for its second press
+    this.stoppedPids = new Set(); // servers stopped from here: not a surprise
+    this.gone = []; // servers that ended by themselves, kept a minute with a Restart button
+    this.prs = {}; // `${repo} ${branch}` -> { pr, at }: the branch's pull request and its CI
     this.listing = false;
     cx.timer.after(3000, (cx) => this.refreshTrees(cx));
     this.refreshServers(cx);
+    cx.timer.after(8000, (cx) => this.refreshPrs(cx));
+    cx.timer.every(120000, (cx) => this.refreshPrs(cx));
     cx.timer.every(20000, (cx) => this.refreshTrees(cx));
     cx.timer.every(5000, (cx) => this.refreshServers(cx));
   }
@@ -181,8 +186,16 @@ export default class Spaces extends View {
       const cwds = pids.length ? parseCwds((await exec("lsof", ["-a", "-d", "cwd", "-Fpn", "-p", pids.join(",")])).stdout) : {};
       const picked = pickServers(listeners, cwds, places);
       const ups = picked.length ? parseUptimes((await exec("ps", ["-o", "pid=,etime=", "-p", picked.map((x) => x.pid).join(",")])).stdout) : {};
-      const next = picked.map((x) => ({ ...x, up: ups[x.pid] ?? "" }));
-      if (JSON.stringify(next) !== JSON.stringify(this.servers)) { this.servers = next; cx.notify(); }
+      const cmds = picked.length ? parseCommands((await exec("ps", ["-o", "pid=,command=", "-p", picked.map((x) => x.pid).join(",")])).stdout) : {};
+      const next = picked.map((x) => ({ ...x, up: ups[x.pid] ?? "", cmd: cmds[x.pid] ?? "" }));
+      // A server that ended by itself: a toast, and a card with Restart for a minute.
+      const tracked = trackGone(this.servers, next, this.stoppedPids, this.gone, Date.now());
+      for (const g of tracked.fresh) {
+        notify({ title: `${g.place.name || "A server"} :${g.port} stopped`, body: `${g.command} ended. Restart it from the Servers list.`, level: "warning" });
+      }
+      const goneChanged = JSON.stringify(tracked.gone) !== JSON.stringify(this.gone);
+      this.gone = tracked.gone;
+      if (goneChanged || JSON.stringify(next) !== JSON.stringify(this.servers)) { this.servers = next; cx.notify(); }
     } catch {
       // lsof missing or slow: keep what the list showed.
     }
@@ -193,6 +206,7 @@ export default class Spaces extends View {
   stop(server, cx) {
     if (this.stopping?.pid === server.pid && Date.now() < this.stopping.until) {
       this.stopping = null;
+      this.stoppedPids.add(server.pid);
       exec("kill", ["-TERM", String(server.pid)]).then(() => this.refreshServers(cx)).catch(() => {});
     } else {
       this.stopping = { pid: server.pid, until: Date.now() + 4000 };
@@ -658,6 +672,40 @@ export default class Spaces extends View {
         .child(div().text_color(tone(t, w.status)).child(glyph(w.status)))));
   }
 
+  // Run the stopped server's command again, in a tab you can see, in the folder it ran in.
+  restart(g, cx) {
+    const args = { folder: g.cwd, argv: ["/bin/zsh", "-lc", g.cmd], name: `:${g.port}` };
+    if (g.place.id) run("tab.new", { ...args, space: g.place.id });
+    else run("space.new", { folder: g.cwd, machine: "", argv: args.argv });
+    this.gone = this.gone.filter((x) => x.pid !== g.pid);
+    cx.notify();
+  }
+
+  // Each non-main worktree's pull request and CI, from gh (a repo without GitHub, or no gh, is left out).
+  async refreshPrs(cx) {
+    if (this.prsBusy) return;
+    this.prsBusy = true;
+    try {
+      let changed = false;
+      for (const g of this.trees) {
+        for (const wt of g.trees) {
+          if (wt.main || wt.detached) continue;
+          const key = `${g.name} ${wt.branch}`;
+          const had = this.prs[key];
+          if (had?.failed && Date.now() - had.at < 600000) continue;
+          try {
+            const r = await exec("gh", ["pr", "list", "--head", wt.branch, "--state", "all", "--limit", "1", "--json", "number,state,url,isDraft,statusCheckRollup"], { cwd: wt.path, timeout: 15000 });
+            const entry = r.code === 0 ? { pr: parsePr(r.stdout), at: Date.now() } : { pr: null, failed: true, at: Date.now() };
+            if (JSON.stringify(entry.pr) !== JSON.stringify(had?.pr)) changed = true;
+            this.prs[key] = entry;
+          } catch { this.prs[key] = { pr: null, failed: true, at: Date.now() }; }
+        }
+      }
+      if (changed) cx.notify();
+    } catch {}
+    this.prsBusy = false;
+  }
+
   // A section like Reviewer: the servers running in your projects, nicely. Click one to open it in the browser;
   // the x asks "Stop?" and a second press ends the process.
   serversSection(t) {
@@ -666,6 +714,15 @@ export default class Spaces extends View {
     return v_flex().flex_none().pt(10).pb(4).mx(-8)
       .child(h_flex().h(31).pl(16).pr(10).items_center().justify_between().text_size(11.5).text_color(t.dim)
         .child("Servers").child(div().text_color(t.dim).child(String(this.servers.length))))
+      .children(this.gone.map((g) => h_flex().id(`gone-${g.pid}`).mx(8).my(2).px(8).h(46).gap(10).items_center().rounded(8)
+        .border(1).border_color(t.blocked ?? t.border)
+        .child(svg("mods/workspace-chrome/server.svg").size(18).flex_none().text_color(t.blocked ?? t.dim))
+        .child(v_flex().flex_1().min_w(0)
+          .child(h_flex().gap(6).items_baseline().child(div().font_semibold().text_color(t.blocked ?? t.foreground).child(`:${g.port}`)).child(div().truncate().text_color(t.muted).child("stopped")))
+          .child(div().truncate().text_size(11).text_color(t.dim).child(g.cmd)))
+        .child(div().id(`restart-${g.pid}`).px(8).h(24).flex().items_center().rounded(6).flex_none().text_size(11).text_color(t.accent ?? t.foreground)
+          .cursor_pointer().hover((el) => el.bg(t.raised ?? t.hover))
+          .on_click((_e, cx) => this.restart(g, cx)).child("\u21bb Restart"))))
       .children(this.servers.map((sv) => {
         const w = sp.find((x) => x.id === sv.place.id);
         const realm = w ? realms[w.id] : null;
@@ -699,13 +756,28 @@ export default class Spaces extends View {
     if (!groups.length) return null;
     const rows = [];
     for (const g of groups) {
-      rows.push(h_flex().h(22).pl(16).pr(10).items_center().text_size(11).text_color(t.dim).child(g.name));
+      const mainPath = (g.trees.find((x) => x.main) ?? g.trees[0]).path;
+      rows.push(h_flex().h(24).pl(16).pr(10).items_center().justify_between().text_size(11).text_color(t.dim).child(g.name)
+        .child(div().id(`tree-new-${mainPath}`).px(6).h(20).flex().items_center().rounded(5).text_size(10.5)
+          .cursor_pointer().hover((el) => el.bg(t.hover).text_color(t.foreground))
+          .on_click(() => openOverlay({ mod: "worktree", kind: "dialog", width: 460, height: 280, props: { folder: mainPath, machine: "", argv: ["claude"] } }))
+          .child("+ worktree + agent")));
       g.trees.forEach((wt, n) => rows.push(h_flex().id(`tree-${wt.path}`).mx(8).px(8).h(28).gap(7).items_center().rounded(7)
         .cursor_pointer().hover((el) => el.bg(t.hover))
         .on_click(() => (wt.space ? run("space.select", { id: wt.space }) : run("space.new", { folder: wt.path, machine: "" })))
         .child(div().text_color(t.dim).text_size(11.5).child(n === g.trees.length - 1 ? "\u2514\u2500" : "\u251c\u2500"))
         .child(svg("mods/workspace-chrome/branch.svg").size(13).flex_none().text_color(wt.space ? t.accent : t.dim))
         .child(div().flex_1().min_w(0).truncate().text_color(wt.space ? t.foreground : t.muted).child(wt.branch))
+        .when(Boolean(this.prs[`${g.name} ${wt.branch}`]?.pr), (el) => {
+          const pr = this.prs[`${g.name} ${wt.branch}`].pr;
+          const tone2 = pr.state === "merged" ? "#a78bfa" : pr.state === "closed" ? t.dim : pr.ci === "fail" ? t.blocked : pr.ci === "pass" ? t.done : pr.ci === "pending" ? t.working : t.muted;
+          const mark = pr.state === "merged" ? "merged" : pr.state === "closed" ? "closed" : pr.ci === "fail" ? "\u2715" : pr.ci === "pass" ? "\u2713" : pr.ci === "pending" ? "\u2026" : pr.state === "draft" ? "draft" : "";
+          return el.child(div().id(`pr-${wt.path}`).px(5).h(18).flex().items_center().rounded(5).flex_none().text_size(10.5).text_color(tone2)
+            .hover((e2) => e2.bg(t.raised ?? t.hover))
+            .on_mouse_down("left", (_e, cx) => cx.stop_propagation())
+            .on_click((_e, cx) => { cx.stop_propagation(); if (pr.url) cx.open_url(pr.url); })
+            .child(`#${pr.number} ${mark}`.trim()));
+        })
         .child(div().text_size(10.5).flex_none().text_color(wt.space ? t.accent : t.dim).child(wt.main ? "main" : wt.space ? "open" : "+ open"))));
     }
     return v_flex().flex_none().pt(10).pb(4).mx(-8)
@@ -750,7 +822,7 @@ export default class Spaces extends View {
         .children(list)
         // The Reviewer section follows the last space instead of sinking to the bottom of the block.
         .when(!collapsed && this.reviewers?.length > 0, (el) => el.child(this.reviewerSection(t)))
-        .when(!collapsed && this.servers.length > 0, (el) => el.child(this.serversSection(t)))
+        .when(!collapsed && this.servers.length + this.gone.length > 0, (el) => el.child(this.serversSection(t)))
         .when(!collapsed, (el) => { const w = this.worktreesSection(t); return w ? el.child(w) : el; }));
   }
 }

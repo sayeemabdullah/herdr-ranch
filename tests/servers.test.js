@@ -52,3 +52,59 @@ test("only repos with more than one worktree are listed, each marked with its op
   assert.equal(got.length, 1);
   assert.deepEqual(got[0].trees.map((t) => t.space), ["s1", null]);
 });
+
+import { parseCommands, trackGone } from "../mods/meadows/servers.js";
+import { parsePr } from "../mods/meadows/worktrees.js";
+import { portClash, watchAgent } from "../mods/flock/watch.js";
+
+test("commands are read per pid", () => {
+  assert.deepEqual(parseCommands("  101 node server.js --port 3000\n202 /usr/bin/python3 -m http.server\n"), { 101: "node server.js --port 3000", 202: "/usr/bin/python3 -m http.server" });
+});
+
+test("a server that ends by itself is reported once and kept for a minute; one you stopped is not", () => {
+  const a = { pid: 1, port: 3000, command: "node", cmd: "node a.js", place: { id: "s1" } };
+  const b = { pid: 2, port: 4000, command: "node", cmd: "node b.js", place: { id: "s1" } };
+  const r = trackGone([a, b], [b], new Set(), [], 1000);
+  assert.deepEqual(r.fresh.map((s) => s.pid), [1]);
+  assert.deepEqual(r.gone.map((s) => s.pid), [1]);
+  const quiet = trackGone([a, b], [b], new Set([1]), [], 1000);
+  assert.deepEqual(quiet.fresh, []);
+  assert.deepEqual(quiet.gone, []);
+  assert.deepEqual(trackGone([b], [b], new Set(), r.gone, 1000 + 30000).gone.map((s) => s.pid), [1]);
+  assert.deepEqual(trackGone([b], [b], new Set(), r.gone, 1000 + 61000).gone, []);
+  const back = trackGone([b], [b, { ...a, pid: 9 }], new Set(), r.gone, 2000);
+  assert.deepEqual(back.gone, []);
+});
+
+test("a pull request is read for its state and CI", () => {
+  const pr = (o) => JSON.stringify([{ number: 7, state: "OPEN", url: "https://github.com/o/r/pull/7", isDraft: false, statusCheckRollup: [], ...o }]);
+  assert.deepEqual(parsePr(pr({})), { number: 7, state: "open", ci: null, url: "https://github.com/o/r/pull/7" });
+  assert.equal(parsePr(pr({ isDraft: true })).state, "draft");
+  assert.equal(parsePr(pr({ state: "MERGED" })).state, "merged");
+  assert.equal(parsePr(pr({ state: "CLOSED" })).state, "closed");
+  assert.equal(parsePr(pr({ statusCheckRollup: [{ conclusion: "SUCCESS", status: "COMPLETED" }, { conclusion: "SKIPPED", status: "COMPLETED" }] })).ci, "pass");
+  assert.equal(parsePr(pr({ statusCheckRollup: [{ conclusion: "SUCCESS", status: "COMPLETED" }, { conclusion: "FAILURE", status: "COMPLETED" }] })).ci, "fail");
+  assert.equal(parsePr(pr({ statusCheckRollup: [{ conclusion: "", status: "IN_PROGRESS" }] })).ci, "pending");
+  assert.equal(parsePr(pr({ statusCheckRollup: [{ state: "FAILURE" }] })).ci, "fail");
+  assert.equal(parsePr("[]"), null);
+  assert.equal(parsePr("not json"), null);
+  assert.equal(parsePr(""), null);
+});
+
+test("a port that is already in use is spotted on a screen, once", () => {
+  assert.equal(portClash("Error: listen EADDRINUSE: address already in use :::3000"), 3000);
+  assert.equal(portClash("OSError: [Errno 98] address already in use 127.0.0.1:8000"), 8000);
+  assert.equal(portClash("Port 5173 is already in use"), 5173);
+  assert.equal(portClash("Something is already running on port 3000"), null);
+  assert.equal(portClash("all fine on port 3000"), null);
+  assert.equal(portClash(""), null);
+  let r = watchAgent({}, { status: "working", screen: "listen EADDRINUSE :::3000" }, 0);
+  assert.deepEqual(r.fire, ["port"]);
+  assert.equal(r.state.clash, 3000);
+  r = watchAgent(r.state, { status: "working", screen: "listen EADDRINUSE :::3000" }, 1000);
+  assert.deepEqual(r.fire, []);
+  r = watchAgent(r.state, { status: "working", screen: "ready" }, 2000);
+  assert.equal(r.state.clash, null);
+  r = watchAgent(r.state, { status: "working", screen: "listen EADDRINUSE :::3000" }, 3000);
+  assert.deepEqual(r.fire, ["port"]);
+});

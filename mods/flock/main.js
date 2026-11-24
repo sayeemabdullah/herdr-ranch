@@ -259,7 +259,7 @@ export default class Agents extends View {
             if (Date.now() - this.lastQuotaToast < 10 * MINUTE) continue;
             this.lastQuotaToast = Date.now();
           }
-          this.warn(list[i], kind, { ctx, quota });
+          this.warn(list[i], kind, { ctx, quota, port: watched.state.clash });
         }
         // Spend today: each session's highest cost seen, summed on the board.
         if (cost != null && cost > (this.ranch.cost[address] ?? 0)) {
@@ -357,14 +357,21 @@ export default class Agents extends View {
       context: [`${name}: context ${facts.ctx}% full`, "Time to compact, or start a fresh session."],
       quota: [`${name}: ${100 - facts.quota}% of the 5-hour quota left`, "Pace yourself, or switch agents."],
       stuck: [`${name} looks stuck`, "Working, but its screen hasn't changed for 5 minutes."],
+      port: [`${name}: port ${facts.port} is already in use`, "Another process holds it."],
     }[kind];
-    notify({
+    const post = (body) => notify({
       title: text[0],
-      body: text[1],
+      body,
       level: "warning",
       icon: hero ? `mods/flock/sprites/${variant ? `${hero}-alt` : hero}-blocked.svg` : undefined,
       action: { name: "pane.focus", args: { pane: a.pane } },
     });
+    if (kind !== "port") return post(text[1]);
+    // Who holds the port: a quick look, so the toast names the program and its process.
+    exec("lsof", ["-nP", `-iTCP:${facts.port}`, "-sTCP:LISTEN", "-Fpc"], { timeout: 4000 }).then((r) => {
+      const pid = /^p(\d+)/m.exec(r.stdout)?.[1], cmd = /^c(.+)$/m.exec(r.stdout)?.[1];
+      post(pid ? `${cmd} (process ${pid}) is listening on it. Stop it from the Servers list, or pick another port.` : text[1]);
+    }, () => post(text[1]));
   }
 
   // Find animals: Enter jumps to the first animal that matches.
