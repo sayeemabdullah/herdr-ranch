@@ -188,4 +188,4 @@ python3 -m unittest discover -s tools
 
 ## License
 
-[MIT](LICENSE)
+[MIT](LICENSE). The part adapted from herdr-middle-earth keeps its own copyright notice in [NOTICE.md](NOTICE.md).
