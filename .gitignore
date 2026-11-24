@@ -1,0 +1,7 @@
+node_modules/
+.DS_Store
+__pycache__/
+backups/
+# Working notes (design, plans); not part of the layout
+docs/
+.superpowers/

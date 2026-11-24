@@ -1,0 +1,34 @@
+name: PR title
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+permissions:
+  pull-requests: read
+
+jobs:
+  pr-title:
+    name: PR title
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Title follows Conventional Commits
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          types='feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert'
+          echo "Title: $TITLE"
+          if printf '%s' "$TITLE" | grep -Eq "^($types)(\([a-z0-9._/-]+\))?!?: [^ ].{2,}$"; then
+            echo "✓ looks good"
+          else
+            echo "::error::PR title must look like 'type(scope): what it does'"
+            echo "  type:  feat | fix | docs | style | refactor | perf | test | build | ci | chore | revert"
+            echo "  scope: optional, lowercase, e.g. sprites, flock, board"
+            echo "  !:     optional, marks a breaking change, e.g. 'feat(layout)!: rename the layout file'"
+            echo "Examples:"
+            echo "  feat(flock): add a new rare animal"
+            echo "  fix(meadows): keep the reviewer card under the last space"
+            echo "  docs: explain the warning toasts"
+            exit 1
+          fi
