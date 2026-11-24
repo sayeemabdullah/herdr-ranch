@@ -7,6 +7,7 @@
 - **Server ended? Restart it.** A server that stops by itself toasts, and its card stays a minute with a Restart button.
 - **PR and CI on worktrees**, and a **+** on each repo (a new worktree with an agent).
 - **Port clash toast** naming what holds the port, when an agent hits EADDRINUSE.
+- **Worktrees as pixel trees.** A full tree for the main checkout, a young tree for a branch with a space open, a sapling for one without.
 - **Worktrees section.** Each repo with more than one worktree lists them, with a dot where a space is open and one click to open or create it.
 - **A new preview picture.** `preview.png` is now a banner: the pixel title, what the layout is in one line, three callouts, the real window and the twelve animals on a fence. It is drawn by `tools/preview_banner.py`. The plain dark screenshot moved to `assets/preview-dusk.png` for the theme section.
 

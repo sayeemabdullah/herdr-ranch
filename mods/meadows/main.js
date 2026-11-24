@@ -788,7 +788,7 @@ export default class Spaces extends View {
         .cursor_pointer().hover((el) => el.bg(t.hover))
         .on_click(() => (wt.space ? run("space.select", { id: wt.space }) : run("space.new", { folder: wt.path, machine: "" })))
         .child(div().text_color(t.dim).text_size(11.5).child(n === g.trees.length - 1 ? "\u2514\u2500" : "\u251c\u2500"))
-        .child(svg("mods/workspace-chrome/branch.svg").size(13).flex_none().text_color(wt.space ? t.accent : t.dim))
+        .child(image(`mods/flock/icons/tree-${wt.main ? 5 : wt.space ? 3 : 1}.svg`).w(16).h(16).flex_none())
         .child(div().flex_1().min_w(0).truncate().text_color(wt.space ? t.foreground : t.muted).child(wt.branch))
         .when(Boolean(this.prs[`${g.name} ${wt.branch}`]?.pr), (el) => {
           const pr = this.prs[`${g.name} ${wt.branch}`].pr;
