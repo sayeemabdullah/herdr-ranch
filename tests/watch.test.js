@@ -9,7 +9,7 @@ const MIN = 60000;
 
 test("parseCost reads the session cost, not the 'last' one", () => {
   assert.equal(parseCost("x · ctx 5% 45k/1000k · $0.01 last $0.00 32s"), 0.01);
-  assert.equal(parseCost("· $12.5 ·"), 12.5);
+  assert.equal(parseCost("x · Opus 5.5 · ctx 9% · $12.5 ·"), 12.5);
   assert.equal(parseCost("nothing here"), null);
 });
 

@@ -1,7 +1,7 @@
 // Run with: node --test tests/agent-stats.test.js
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { parseContext, parseModel } from "../mods/flock/agent-stats.js";
+import { parseContext, parseModel, parseCost } from "../mods/flock/agent-stats.js";
 
 const screen = (...lines) => ["some chat output", "", ...lines].join("\n");
 
@@ -49,4 +49,10 @@ test("parseQuota reads the 5h window used", () => {
   assert.equal(parseQuota("/x · master · Haiku 5.5 · ctx 5% · $0.01 · 5h 32% 7d 80% · [AD…"), 32);
   assert.equal(parseQuota("nothing here"), null);
   assert.equal(parseQuota("5h 250%"), 100);
+});
+
+test("parseCost reads only the status-line row, not a dollar amount in chat text", () => {
+  assert.equal(parseCost("Our plan costs $15 per month, said the page.\nmore text"), null);
+  assert.equal(parseCost("The bill was $15.00 for the month\n/x · main · Opus 5.5 · ctx 9% · $1.25 · 5h 21%"), 1.25);
+  assert.equal(parseCost("/x · Haiku 5.5 · $0.01 last $0.00 32s"), 0.01);
 });

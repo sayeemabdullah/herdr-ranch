@@ -72,7 +72,7 @@ Looking at an animal (focusing its pane) resets it to "Resting". Sub-agents show
 
 - **Warnings.** A toast in the animal's voice, once, when an agent's context is 80% full, when the 5-hour quota is down to 10%, or when an agent has been working for 5 minutes with an unchanged screen ("looks stuck"). Click it to go to that agent.
 - **What a task changed.** When an agent finishes, its card and the "All done" toast show something like `✎ 3 files +120 −30`: the change in its git folder between the start and the end of the task. New untracked files aren't counted, a commit during the task clears the numbers, and remote machines are skipped.
-- **Spend.** Each card shows its session cost; the board adds up today's.
+- **Spend.** Each card shows its session cost; the board adds up today's. Click the amount on the board to start counting from zero. The cost is read only from the status-line row, so a dollar amount in the chat is never counted.
 - **Toasts** like "Clover: baa! All done", with the animal's picture, and system banners when herdr is in the background.
 
 ### Space emblems

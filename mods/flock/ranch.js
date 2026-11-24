@@ -16,3 +16,23 @@ export function worked(ms) {
   const m = Math.round(ms / MINUTE);
   return m < 60 ? `${m}m` : `${Math.floor(m / 60)}h ${m % 60}m`;
 }
+
+/** A working spell must last this long to count as a task, so a flicker of activity is not one. */
+export const MIN_TASK = 20000;
+export const countsAsTask = (ms) => ms >= MIN_TASK;
+
+const REREAD_AFTER = 2 * MINUTE;
+/**
+ * Whether an agent's screen needs reading now: it is working, you are looking at it, its state just changed,
+ * it was never read, or its last reading is over two minutes old. Everyone else keeps the numbers they had.
+ */
+export function needsRead(agent, now, lastReadAt, changed) {
+  return agent.status === "working" || agent.focused || Boolean(changed) || lastReadAt == null || now - lastReadAt > REREAD_AFTER;
+}
+
+/** Bump when the way the cost is read changes, so what an older reader counted is not carried over. */
+export const COST_VERSION = 2;
+export function migrateCost(ranch) {
+  if (ranch.costV === COST_VERSION) return ranch;
+  return { ...ranch, cost: {}, costBase: {}, costV: COST_VERSION };
+}

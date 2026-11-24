@@ -67,9 +67,13 @@ export function parseQuota(text) {
   return null;
 }
 
-/** The session's cost in dollars off a Claude-style status line ("$1.25 last $0.00"), or null. */
+/** The session's cost in dollars off a Claude-style status line ("$1.25 last $0.00"), or null.
+ *  Only a row that looks like the status line counts (it shows the context, the model or the 5h quota),
+ *  so a dollar amount in the chat above is never mistaken for the cost. */
+const STATUS_ROW = /\bctx\b|\b(?:Opus|Sonnet|Haiku|Fable) \d|\b5h\s+\d|\blast \$/;
 export function parseCost(text) {
   for (const line of tail(text ?? "")) {
+    if (!STATUS_ROW.test(line)) continue;
     const m = line.match(/(?<!last )\$(\d+(?:\.\d+)?)/);
     if (m) return Number(m[1]);
   }

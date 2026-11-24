@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **More trustworthy numbers.** The cost is read only from the status-line row, never from a dollar amount in the chat; clicking the spend on the ranch board starts counting from zero. A working spell shorter than 20 seconds no longer counts as a task. Only agents that are working, focused, just changed or stale are read, so many agents cost less to watch.
 - **Scout and the Reviewer section now need the PR Panel.** Before, any space with "PR Reviewer" in its name became Scout, including the space where you write the plugin. Now a space is the Reviewer only while PR Reviewer's PR Panel or watcher runs in it, whatever the space is called. A space that is only named like it is an ordinary space with an emblem.
 
 ## 0.1.0
