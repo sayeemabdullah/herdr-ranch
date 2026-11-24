@@ -174,7 +174,7 @@ The script copies the layout, two themes and seven mods into `~/.config/herdr-ap
 
 ### Update
 
-The right end of the status bar (bottom of the window) shows the installed version as quiet text, `Ranch v0.2.0`; click it to check for a release right now. When a newer release is out, it turns into a gold **Update to vX.Y.Z** button, left of CPU:
+The right end of the status bar (bottom of the window) shows the installed version as quiet text, `Ranch v0.2.1`; click it to check for a release right now. When a newer release is out, it turns into a gold **Update to vX.Y.Z** button, left of CPU:
 
 <p align="center"><img src="assets/update-button.png" alt="The status bar with the gold Update to v0.3.0 button with an up arrow, left of the CPU, RAM and Disk meters" width="720"></p>
 

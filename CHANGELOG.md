@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased
+## 0.2.1
+
+A calmer sidebar, a fixed and restyled worktree dialog, and Ranch settings.
 
 - **Worktree dialog fixed and restyled.** The + that made a worktree failed with `unknown machine ""`; fixed. The New and Open worktree dialog is now a ranch-styled `ranch-worktree` mod with a folder preview, real buttons, softer errors, and a Delete on every row of the Open list (press twice; the branch stays, uncommitted changes are warned about first).
 - **A calmer sidebar.** Reviewer, Servers and Worktrees each have a heading with a chevron to fold them (Worktrees starts folded), thin lines between them, slimmer server cards, and Worktrees shows only the main checkout, the open ones and three more, with "+ N more" for the rest.
