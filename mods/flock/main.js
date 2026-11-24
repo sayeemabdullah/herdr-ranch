@@ -5,6 +5,7 @@ import { v_flex, h_flex, InputState, Input } from "gpui-base";
 import { agents, settings, terminals, panes, focused, spaces, run, theme, shared, setShared, setAgentOrder, openOverlay, closeOverlay, props, window, layout, hc, checking, notify, exec } from "herdr";
 import { parseContext, parseModel, parseQuota, parseCost } from "./agent-stats.js";
 import { watchAgent, parseShortstat, changeSince, formatChange } from "./watch.js";
+import { pickContext, buildHandoff, parseLines } from "./handoff.js";
 import { castAgents } from "./casting.js";
 import { MINUTE, NAP_AFTER, ALARM_AFTER, TREE_AT, lifeOf, treeStage, worked, countsAsTask, needsRead, migrateCost } from "./ranch.js";
 
@@ -96,6 +97,8 @@ const titleCase = (s) => s[0].toUpperCase() + s.slice(1);
 const STATS_PERIOD = 15000;
 const SUMMARY_KEY = "flock.summary";
 const SOUND_KEY = "flock.sound";
+// Handoff: how many screen lines to include (a custom number from 1 to 1000 works too).
+const SPANS = [20, 40, 80, 160, 300];
 const SUMMARY_FRESH = 2 * 60 * MINUTE;
 // The ranch board: tasks finished today grow the tree (stages at these counts); a long wait makes it droop.
 const WAIT_DROOP = 5 * MINUTE;
@@ -184,6 +187,7 @@ function castFor(list, all) {
 export default class Agents extends View {
   init(_props, cx) {
     if (props()?.rename) return this.initRename();
+    if (props()?.handoff) return this.initHandoff(cx);
     if (props()?.sortMenu || props()?.needsList) return;
     this.folded = new Set();
     // Each agent's last state and when it changed (ms), kept across restarts.
@@ -430,6 +434,116 @@ export default class Agents extends View {
     return RANK[a.status] ?? 0;
   }
 
+  // Handoff popup: read the source agent's screen, let the person pick who gets it and read exactly what
+  // will be sent. Nothing leaves until Send is pressed.
+  initHandoff(cx) {
+    this.screen = null;
+    this.target = null;
+    this.span = 40;
+    this.sent = null;
+    const p = props();
+    this.intro = "";
+    this.introInput = InputState.new({ value: "", placeholder: `Context from ${p.from}, so you can pick this up:` });
+    this.introInput.on("change", (_e, cx2) => { this.intro = this.introInput.value(); cx2.notify(); });
+    // Any number of lines from 1 to 1000, typed next to the 20 / 40 / 80 / 160 / 300 buttons.
+    this.customInput = InputState.new({ value: "", placeholder: "custom" });
+    this.customInput.on("change", (_e, cx2) => {
+      const n = parseLines(this.customInput.value());
+      if (n) this.span = n;
+      cx2.notify();
+    });
+    cx.spawn(async (cx2) => {
+      const r = await hc(["read", p.handoff]).catch(() => null);
+      this.screen = r && r.code === 0 ? r.stdout : "";
+      cx2.notify();
+    });
+  }
+
+  handoffText() {
+    const p = props();
+    return buildHandoff({ from: p.from, intro: this.intro, context: pickContext(this.screen ?? "", this.span) });
+  }
+
+  sendHandoff(cx) {
+    if (!this.target || this.sent) return;
+    const p = props();
+    const text = this.handoffText();
+    this.sent = "sending";
+    cx.notify();
+    hc(["send", this.target, text]).then((r) => {
+      this.sent = r.code === 0 ? "sent" : "failed";
+      cx.notify();
+      if (r.code === 0) closeOverlay(p.overlay);
+      else console.warn(`flock: hc send ${this.target} failed: ${r.stderr.trim()}`);
+    }, () => { this.sent = "failed"; cx.notify(); });
+  }
+
+  handoffBox(t) {
+    const p = props();
+    const cast = shared(CAST_KEY) ?? {};
+    const names = shared(NAMES_KEY) ?? {};
+    const variants = shared(VARIANT_KEY) ?? {};
+    const others = agents().filter((a) => a.address !== p.handoff);
+    const text = this.screen == null ? "Reading the screen…" : this.handoffText();
+    const sprite = (addr, size) => cast[addr] ? image(`mods/flock/sprites/${variants[addr] ? `${cast[addr]}-alt` : cast[addr]}.svg`).w(size).h(size).flex_none() : null;
+    const label = (s) => div().text_size(10).font_semibold().text_color(t.accent).child(s.toUpperCase());
+    const button = (id, text2, primary, on, action) => h_flex().id(id).h(32).px(16).items_center().justify_center().rounded(4)
+      .border(2).border_color(primary && on ? t.solid : t.input).bg(primary && on ? t.solid : t.raised)
+      .text_color(primary && on ? t.solid_foreground : t.foreground).text_size(12.5).font_semibold()
+      .when(on, (el) => el.cursor_pointer().hover((s) => s.opacity(0.88)).on_click(action)).when(!on, (el) => el.opacity(0.45)).child(text2);
+    const target = others.find((a) => a.address === this.target);
+    const lines = this.screen ? this.screen.split("\n").length : 0;
+    const ready = Boolean(this.target) && this.screen != null && !this.sent || this.sent === "failed";
+    return v_flex().w_full().h_full().p(18).gap(10).bg(t.popover).text_color(t.foreground)
+      .child(h_flex().items_center().gap(10)
+        .when(Boolean(cast[p.handoff]), (el) => el.child(div().flex_none().p(4).rounded(4).bg(t.chrome).border(2).border_color(t.accent).child(sprite(p.handoff, 32))))
+        .child(v_flex().flex_1().min_w(0)
+          .child(div().text_size(15).font_semibold().truncate().child(`Hand off ${p.from}'s screen`))
+          .child(div().text_size(11).text_color(t.dim).child("Pick who gets it, then read it before you send.")))
+        .child(div().flex_none().px(6).h(18).flex().items_center().rounded(5).border(1).border_color(t.border).text_size(10).text_color(t.dim).child("Esc")))
+      .child(div().h(1).w_full().flex_none().bg(t.border))
+      .child(label("Send to"))
+      .child(v_flex().id("handoff-targets").max_h(150).flex_none().overflow_y_scrollbar().gap(4)
+        .when(others.length === 0, (el) => el.child(div().p(10).rounded(4).border(1).border_color(t.border).text_size(12).text_color(t.dim).child("No other agent is running. Start one in another tab.")))
+        .children(others.map((a) => {
+          const on = a.address === this.target;
+          return h_flex().id(`ho-${a.address}`).h(40).px(10).gap(10).rounded(4).items_center().cursor_pointer()
+            .border(2).border_color(on ? t.accent : t.border).bg(on ? t.selected : t.raised).hover((s) => s.bg(t.hover))
+            .on_click((_e, cx) => { this.target = a.address; cx.notify(); })
+            .when(Boolean(cast[a.address]), (el) => el.child(sprite(a.address, 26)))
+            .child(v_flex().flex_1().min_w(0)
+              .child(div().truncate().text_size(12.5).font_semibold().child(names[a.address] ?? a.program?.name ?? a.address))
+              .child(div().truncate().text_size(10.5).text_color(t.dim).child(a.space_name ?? "")))
+            .child(div().flex_none().px(7).h(18).flex().items_center().rounded(4).text_size(10.5).font_medium()
+              .bg(a.status === "working" ? t.working : t.chrome).text_color(a.status === "working" ? t.solid_foreground : t.muted).child(MOOD[a.status] ?? ""))
+            .child(div().flex_none().size(14).rounded(7).border(1).border_color(on ? t.accent : t.input).flex().items_center().justify_center()
+              .when(on, (el) => el.child(div().size(8).rounded(4).bg(t.accent))));
+        })))
+      .child(label("Message"))
+      .child(Input.new(this.introInput).h(34).px(10).rounded(4).border(2).border_color(t.input).bg(t.background).text_size(12).text_color(t.foreground))
+      .child(h_flex().items_center().gap(8)
+        .child(label("Preview"))
+        .child(div().flex_1())
+        .child(h_flex().p(2).gap(2).rounded(4).bg(t.chrome).border(1).border_color(t.border)
+          .children(SPANS.map((n) => div().id(`ho-span-${n}`).px(8).h(20).flex().items_center().rounded(3).text_size(11).cursor_pointer()
+            .when(this.span === n, (el) => el.bg(t.solid).text_color(t.solid_foreground).font_semibold())
+            .when(this.span !== n, (el) => el.text_color(t.muted).hover((s) => s.bg(t.hover)))
+            .on_click((_e, cx) => { this.span = n; this.customInput.set_value?.(""); cx.notify(); }).child(String(n))))
+          .child(Input.new(this.customInput).w(66).h(20).px(6).rounded(3).text_size(11)
+            .border(1).border_color(SPANS.includes(this.span) ? t.border : t.accent).bg(t.background).text_color(t.foreground))
+          .child(div().px(4).text_size(10.5).text_color(t.dim).child("lines"))))
+      .child(h_flex().id("handoff-preview-wrap").flex_1().min_h(0).rounded(4).overflow_hidden().bg(t.canvas).border(2).border_color(t.border)
+        .child(div().w(3).h_full().flex_none().bg(t.accent))
+        .child(div().id("handoff-preview").flex_1().min_w(0).h_full().overflow_y_scrollbar().p(10).text_size(11).text_color(t.muted).child(text)))
+      .child(div().text_size(10.5).text_color(t.dim).child(`This is exactly what will be sent${lines ? ` (${text.length} characters)` : ""}. It can contain anything that was on the screen.`))
+      .when(target?.status === "working", (el) => el.child(h_flex().gap(6).items_center().px(10).py(6).rounded(4).bg(t.chrome).border(1).border_color(t.done)
+        .child(div().text_size(11).text_color(t.done).child(`${names[target.address] ?? "That agent"} is working: this reaches it as its next message.`))))
+      .child(h_flex().gap(8).justify_end().items_center()
+        .when(this.sent === "failed", (el) => el.child(div().flex_1().text_size(11).text_color(t.blocked).child("Could not send. Is that agent still running?")))
+        .child(button("ho-cancel", "Cancel", false, true, () => closeOverlay(p.overlay)))
+        .child(button("ho-send", this.sent === "sending" ? "Sending…" : target ? `Send to ${names[target.address] ?? "agent"}` : "Send", true, ready, (_e, cx) => { this.sent = null; this.sendHandoff(cx); })));
+  }
+
   initRename() {
     this.text = props().value ?? "";
     this.input = InputState.new({ value: this.text });
@@ -627,6 +741,7 @@ export default class Agents extends View {
   render(cx) {
     const t = theme();
     if (props()?.rename) return this.renameBox(t);
+    if (props()?.handoff) return this.handoffBox(t);
     if (props()?.needsList) return this.needsList(t);
     if (props()?.sortMenu) return this.sortMenu(t);
     const collapsed = narrow();
@@ -816,6 +931,13 @@ export default class Agents extends View {
           .when(hasQuota, el => el.child(this.spBar(t, stat.quota))))
         .when(Boolean(machine), el => el.child(div().text_size(10).text_color(t.dim).child(machine)))
         .when(subs.length > 0, el => el.child(fold(a, subs)))
+        .when(this.hovered === a.address && Boolean(hero) && list.length > 1, el => el.child(div().id(`handoff-${a.address}`)
+          .flex_none().p(2).rounded(4).text_size(13).text_color(t.dim).cursor_pointer()
+          .hover((s) => s.bg(t.hover).text_color(t.foreground)).tooltip("Hand off: send this animal's recent screen to another agent")
+          .on_click((_e, cx) => {
+            cx.stop_propagation();
+            openOverlay({ mod: "flock", kind: "dialog", width: 480, height: 600, props: { handoff: a.address, from: names[a.address] ?? titleCase(hero) } });
+          }).child("↗")))
         .when(this.hovered === a.address, el => el.child(pin))
         .when(this.hovered !== a.address && Boolean(when), el => el.child(div().flex_none().text_size(11).text_color(t.dim).child(duration(now - when))))
         .when(dim, el => el.opacity(0.25))

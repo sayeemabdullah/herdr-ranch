@@ -4,6 +4,7 @@
 
 - **More trustworthy numbers.** The cost is read only from the status-line row, never from a dollar amount in the chat; clicking the spend on the ranch board starts counting from zero. A working spell shorter than 20 seconds no longer counts as a task. Only agents that are working, focused, just changed or stale are read, so many agents cost less to watch.
 - **Animal sounds.** The animal says its piece when its done or needs-you toast appears: 11 tiny chiptune sounds drawn in code (`tools/sounds.py`). The ♪ button in the Agents header mutes them. herdr's own alert sound is separate.
+- **Handoff.** Hover an animal's card and press ↗ to send its recent screen to another agent. The window is in the ranch theme (the sender's portrait, the other agents as cards, a gold-edged preview): you pick the agent, write the first line, choose 20, 40, 80, 160 or 300 lines or type your own number up to 1000, read the exact text, and press Send. Never automatic.
 - **Scout and the Reviewer section now need the PR Panel.** Before, any space with "PR Reviewer" in its name became Scout, including the space where you write the plugin. Now a space is the Reviewer only while PR Reviewer's PR Panel or watcher runs in it, whatever the space is called. A space that is only named like it is an ordinary space with an emblem.
 
 ## 0.1.0
