@@ -11,7 +11,7 @@
 
 <p><a href="https://github.com/sayeemabdullah/herdr-ranch/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/sayeemabdullah/herdr-ranch/ci.yml?branch=master&style=flat-square&label=CI"></a> <a href="https://herdr.dev"><img alt="herdr layout, herdr-app 0.1.16" src="https://img.shields.io/badge/herdr%20layout-0.1.16-222?style=flat-square"></a> <a href="https://nodejs.org"><img alt="Node 22 or newer, for the tests" src="https://img.shields.io/badge/node-%E2%89%A5%2022-339933?style=flat-square&logo=node.js&logoColor=white"></a> <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-0969da?style=flat-square"></a></p>
 
-[Install](#install) · [Update](#update) · [What you get](#what-you-get) · [The cast](#the-cast) · [What it runs](#what-it-runs) · [Develop](#develop) · [Contributing](CONTRIBUTING.md)
+[Install](#install) · [Update](#update) · [What you get](#what-you-get) · [Memory share](#memory-share) · [The cast](#the-cast) · [What it runs](#what-it-runs) · [Develop](#develop) · [Contributing](CONTRIBUTING.md)
 
 <br>
 
@@ -45,7 +45,7 @@ The terminal stays plain: no background art, nothing on the right. CPU, RAM and 
 <td width="33%" valign="top">
 
 ### Tools for developers
-Warnings before an agent runs out of context or quota, or gets stuck. What each task changed. Spend per agent and per day. One list of every agent waiting on you.
+Warnings before an agent runs out of context or quota, or gets stuck. What each task changed. Spend per agent and per day. One list of every agent waiting on you. Hand what one agent has been doing to another.
 
 </td>
 </tr>
@@ -78,11 +78,24 @@ Looking at an animal (focusing its pane) resets it to "Resting". Sub-agents show
 - **Warnings.** A toast in the animal's voice, once, when an agent's context is 80% full, when the 5-hour quota is down to 10%, or when an agent has been working for 5 minutes with an unchanged screen ("looks stuck"). Click it to go to that agent.
 - **What a task changed.** When an agent finishes, its card and the "All done" toast show something like `✎ 3 files +120 −30`: the change in its git folder between the start and the end of the task. New untracked files aren't counted, a commit during the task clears the numbers, and remote machines are skipped.
 - **Spend.** Each card shows its session cost; the board adds up today's. Click the amount on the board to start counting from zero. The cost is read only from the status-line row, so a dollar amount in the chat is never counted.
-- **Handoff.** Hover an animal's card and press ↗ to pass what it has been doing to another agent. A window shows the agents you can send to, a message line, how many screen lines to include (20, 40 or 80), and exactly the text that will be sent. Nothing is sent until you press **Send**; it is never automatic. The text is the agent's recent screen without the status line and prompt box, so read it first: it can contain anything that was on the screen. It goes in as the other agent's next message (with `hc send`). To share skill files between agents, use [skillshare](https://github.com/runkids/skillshare).
-- **Handoff.** Hover an animal's card and press ↗ to pass what it has been doing to another agent. The window is in the ranch theme: the sender's portrait on top, the other agents as cards with their animal, space and mood (click one to pick it, a gold dot marks your choice), a message line (empty gives "Context from <name>, so you can pick this up:"), how many screen lines to include (20, 40, 80, 160 or 300, or any number from 1 to 1000 you type in the custom box), and a gold-edged preview of exactly the text that will be sent, with its length (up to 12000 characters; the end of the screen is kept). The Send button names who it is going to. Nothing is sent until you press **Send**; it is never automatic. The text is the agent's recent screen without the status line and prompt box, so read it first: it can contain anything that was on the screen. It goes in as the other agent's next message (with `hc send`). To share skill files between agents, use [skillshare](https://github.com/runkids/skillshare).
-- **Spend.** Each card shows its session cost; the board adds up today's.
 - **Toasts** like "Clover: baa! All done", with the animal's picture, and system banners when herdr is in the background.
 - **Animal sounds.** When one of those toasts appears, the animal says its piece: a tiny chiptune baa, moo, quack, neigh, squeak, bawk, meh, hum, yip, hoo or roar, drawn in code by `tools/sounds.py` like the pictures. The ♪ button in the Agents header mutes them. herdr plays its own alert sound too; to hear only the animals, change or turn off herdr's under Settings → Alerts.
+
+### Memory share
+
+Hand what one agent has been doing to another, so the second one can pick it up without you retyping it.
+
+1. Hover the animal's card and press **↗**.
+2. Pick who gets it from the other agents (their animal, name, space and mood). If the other agent is working, a note says it reaches it as its next message.
+3. Write a first line, or leave it empty for `Context from <name>, so you can pick this up:`.
+4. Choose how much to include: 20, 40, 80, 160 or 300 lines of its screen, or type any number from 1 to 1000 in the custom box. At most 12,000 characters are sent, and the end of the screen is kept.
+5. Read the preview. It is exactly the message, nothing more.
+6. Press the gold **Send to** button, which names who it goes to. Esc or Cancel sends nothing.
+
+What it shares is the agent's recent conversation: its screen history without the status line, prompt box and separators, pasted into the other agent as its next message (with `hc send`). It does not copy memory files, `CLAUDE.md` or skills; to share skill files between agents, use [skillshare](https://github.com/runkids/skillshare).
+
+> [!WARNING]
+> The preview can contain anything that was on the screen, such as a path or a token. Read it before you press Send. Nothing is ever sent automatically, and one press sends once.
 
 ### Space emblems
 
@@ -187,8 +200,9 @@ These mods are trusted code. Before you install, know that:
 
 - `flock` reads each agent's screen with `hc read` (model, context, quota, cost, whether it looks stuck) every 15 seconds, runs `git diff --shortstat HEAD` (read-only) in each agent's folder on this computer, and posts warning toasts.
 - `meadows` runs `git` (`rev-parse`, `symbolic-ref`, `rev-list`) in each space's folder and watches that repo for changes, to show the branch, and runs `hc machine ls`. This is the same as herdr's own spaces list.
+- `flock` also runs `hc send` once, to the agent you chose, only when you press **Send** in the Memory share window.
 - `flock-status` runs `ps`, `vm_stat`, `sysctl` and `df` (and `nproc` and `cat /proc/meminfo` on Linux) every 5 seconds for the meters.
-- `flock-toast` runs `terminal-notifier` or `osascript` (macOS) or `notify-send` (Linux) for system banners when the window is in the background.
+- `flock-toast` runs `terminal-notifier` or `osascript` (macOS) or `notify-send` (Linux) for system banners when the window is in the background, and plays the animal's sound with herdr's own `playSound`.
 - `ranch-chrome`, `ranch-tabs` and `ranch-pane` only draw: they read herdr's lists and the values the others publish.
 - **Nothing uses the network.**
 
@@ -199,9 +213,11 @@ These mods are trusted code. Before you install, know that:
 Every picture is drawn in code in `tools/sprites.py` (24x24 animals, 20x20 emblems with four skies, small icons): edit the drawing functions, never the SVGs, then regenerate:
 
 ```sh
-python3 tools/sprites.py
+python3 tools/sprites.py            # pictures
+python3 tools/sounds.py             # the animal sounds (standard library only)
 python3 tools/banners.py            # system-banner PNGs; needs Pillow
-node --test                         # casting, vitals, stats, warnings, board
+python3 tools/demo_gif.py           # the README's demo GIF; needs Pillow
+node --test                         # casting, vitals, stats, warnings, board, memory share
 python3 -m unittest discover -s tools
 ```
 
@@ -209,11 +225,12 @@ python3 -m unittest discover -s tools
 |---|---|
 | `layouts/` | `Herdr-Ranch.json` and its preview |
 | `themes/` | `ranch-dusk.json`, `ranch-meadow.json` |
-| `mods/flock` | the agent cards, board, bell, find (clone of herdr's `agents`) |
+| `mods/flock` | the agent cards, board, bell, find, memory share, sounds' mute button (clone of herdr's `agents`) |
 | `mods/meadows` | spaces and the Reviewer section (clone of `spaces`) |
 | `mods/flock-status`, `flock-toast` | status bar and toasts |
 | `mods/ranch-chrome`, `ranch-tabs`, `ranch-pane` | sign and footer, tab bar with the ranch strip, pane header |
-| `tools/` | the art and its tests |
+| `tools/` | the pictures, the sounds and the demo GIF, with their tests |
+| `assets/` | `demo.gif` |
 
 [RECIPE.md](RECIPE.md) is the full brief the layout can be rebuilt from (the format herdr.dev's gallery uses). See [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request: changes go through PRs with Conventional Commit titles, never straight to `master`.
 
