@@ -12,9 +12,9 @@ Thanks for helping! Changes go through pull requests: `master` can't be pushed t
    - **PR title**: see below
 5. PRs are **squash-merged**, and the PR title becomes the commit message on `master`.
 
-## Art
+## Art and sounds
 
-Every picture is drawn in code in `tools/sprites.py`. Edit the drawing functions, never the SVGs, then run `python3 tools/sprites.py` and commit the regenerated files. The top-left 6x6 of every standing animal must stay empty (badges are drawn there); a test enforces it.
+The animal sounds are drawn in code too: edit `tools/sounds.py`, run `python3 tools/sounds.py` and commit the regenerated WAVs. Every picture is drawn in code in `tools/sprites.py`. Edit the drawing functions, never the SVGs, then run `python3 tools/sprites.py` and commit the regenerated files. The top-left 6x6 of every standing animal must stay empty (badges are drawn there); a test enforces it.
 
 ## PR titles
 

@@ -74,6 +74,7 @@ Looking at an animal (focusing its pane) resets it to "Resting". Sub-agents show
 - **What a task changed.** When an agent finishes, its card and the "All done" toast show something like `✎ 3 files +120 −30`: the change in its git folder between the start and the end of the task. New untracked files aren't counted, a commit during the task clears the numbers, and remote machines are skipped.
 - **Spend.** Each card shows its session cost; the board adds up today's. Click the amount on the board to start counting from zero. The cost is read only from the status-line row, so a dollar amount in the chat is never counted.
 - **Toasts** like "Clover: baa! All done", with the animal's picture, and system banners when herdr is in the background.
+- **Animal sounds.** When one of those toasts appears, the animal says its piece: a tiny chiptune baa, moo, quack, neigh, squeak, bawk, meh, hum, yip, hoo or roar, drawn in code by `tools/sounds.py` like the pictures. The ♪ button in the Agents header mutes them. herdr plays its own alert sound too; to hear only the animals, change or turn off herdr's under Settings → Alerts.
 
 ### Space emblems
 
