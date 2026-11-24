@@ -7,6 +7,8 @@ import { View, div, svg, image } from "gpui-kit";
 import { v_flex, h_flex, ScrollHandle } from "gpui-base";
 import { spaces, machines, panes, terminals, run, openOverlay, exec, hc, theme, shared, setShared, watchFolder, window, layout } from "herdr";
 import { reviewerSpaces } from "./reviewer.js";
+import { parseListeners, parseCwds, parseUptimes, pickServers } from "./servers.js";
+import { parseWorktrees, worktreeGroups } from "./worktrees.js";
 
 function find(node, id) {
   if (node?.id === id) return node;
@@ -135,6 +137,68 @@ export default class Spaces extends View {
     cx.timer.every(300000, (cx) => cx.notify());
     // Refresh only when the refs could have changed (see `due`).
     cx.timer.every(250, (cx) => this.checkNew(cx));
+    // The Servers and Worktrees sections (local spaces only): what listens in your projects, and each repo's worktrees.
+    this.servers = []; // [{ pid, command, port, place, up }]
+    this.trees = []; // [{ name, trees: [{ path, branch, main }] }]
+    this.stopping = null; // { pid, until }: a stop waiting for its second press
+    this.listing = false;
+    cx.timer.after(3000, (cx) => this.refreshTrees(cx));
+    this.refreshServers(cx);
+    cx.timer.every(20000, (cx) => this.refreshTrees(cx));
+    cx.timer.every(5000, (cx) => this.refreshServers(cx));
+  }
+
+  // Each local repo's worktrees (git worktree list), de-duplicated by repo.
+  async refreshTrees(cx) {
+    try {
+      const repos = new Map();
+      for (const g of Object.values(this.git)) {
+        if (!g) continue;
+        const [on, common] = JSON.parse(g.repo);
+        if (!on) repos.set(common, g.name);
+      }
+      const out = [];
+      for (const [common, name] of repos) {
+        const cwd = common.endsWith("/.git") ? common.slice(0, -5) : common;
+        const r = await exec("git", ["worktree", "list", "--porcelain"], { cwd });
+        if (r.code === 0) out.push({ name, trees: parseWorktrees(r.stdout) });
+      }
+      if (JSON.stringify(out) !== JSON.stringify(this.trees)) { this.trees = out; cx.notify(); }
+    } catch {}
+  }
+
+  // Listening TCP ports whose process runs inside a space or a worktree, with how long they have been up.
+  async refreshServers(cx) {
+    if (this.listing || narrow()) return;
+    this.listing = true;
+    try {
+      const sp = spaces(), ps = panes();
+      const places = sp.filter((s) => !s.machine).map((s) => ({ id: s.id, name: s.name, path: place(s, ps) })).filter((p) => p.path);
+      for (const g of this.trees) for (const t of g.trees) if (!places.some((p) => p.path === t.path)) places.push({ id: null, name: t.branch, path: t.path });
+      const listen = await exec("lsof", ["-nP", "-iTCP", "-sTCP:LISTEN", "-Fpcn"]);
+      const listeners = parseListeners(listen.stdout);
+      const pids = [...new Set(listeners.map((l) => l.pid))];
+      const cwds = pids.length ? parseCwds((await exec("lsof", ["-a", "-d", "cwd", "-Fpn", "-p", pids.join(",")])).stdout) : {};
+      const picked = pickServers(listeners, cwds, places);
+      const ups = picked.length ? parseUptimes((await exec("ps", ["-o", "pid=,etime=", "-p", picked.map((x) => x.pid).join(",")])).stdout) : {};
+      const next = picked.map((x) => ({ ...x, up: ups[x.pid] ?? "" }));
+      if (JSON.stringify(next) !== JSON.stringify(this.servers)) { this.servers = next; cx.notify(); }
+    } catch {
+      // lsof missing or slow: keep what the list showed.
+    }
+    this.listing = false;
+  }
+
+  // Open the server's page, or stop it: the first press asks, the second (within 4 seconds) sends SIGTERM.
+  stop(server, cx) {
+    if (this.stopping?.pid === server.pid && Date.now() < this.stopping.until) {
+      this.stopping = null;
+      exec("kill", ["-TERM", String(server.pid)]).then(() => this.refreshServers(cx)).catch(() => {});
+    } else {
+      this.stopping = { pid: server.pid, until: Date.now() + 4000 };
+      cx.timer.after(4100, (cx) => cx.notify());
+    }
+    cx.notify();
   }
 
   checkNew(cx) {
@@ -594,6 +658,61 @@ export default class Spaces extends View {
         .child(div().text_color(tone(t, w.status)).child(glyph(w.status)))));
   }
 
+  // A section like Reviewer: the servers running in your projects, nicely. Click one to open it in the browser;
+  // the x asks "Stop?" and a second press ends the process.
+  serversSection(t) {
+    const realms = realmsFor(spaces());
+    const sp = spaces();
+    return v_flex().flex_none().pt(10).pb(4).mx(-8)
+      .child(h_flex().h(31).pl(16).pr(10).items_center().justify_between().text_size(11.5).text_color(t.dim)
+        .child("Servers").child(div().text_color(t.dim).child(String(this.servers.length))))
+      .children(this.servers.map((sv) => {
+        const w = sp.find((x) => x.id === sv.place.id);
+        const realm = w ? realms[w.id] : null;
+        const asking = this.stopping?.pid === sv.pid && Date.now() < this.stopping.until;
+        return h_flex().id(`server-${sv.pid}`).mx(8).my(2).px(8).h(46).gap(10).items_center().rounded(8)
+          .border(1).border_color(t.border)
+          .cursor_pointer().hover((el) => el.bg(t.hover))
+          .on_click((_e, cx) => cx.open_url(`http://localhost:${sv.port}`))
+          .child(realm
+            ? emblemPicture(`mods/meadows/emblems/${realm}${phaseSuffix()}.svg`, false, t)
+            : svg("mods/workspace-chrome/server.svg").size(18).flex_none().text_color(t.dim))
+          .child(v_flex().flex_1().min_w(0)
+            .child(h_flex().gap(6).items_baseline()
+              .child(div().font_semibold().text_color(t.working ?? t.foreground).child(`:${sv.port}`))
+              .child(div().truncate().text_color(t.foreground).child(sv.command)))
+            .child(div().truncate().text_size(11).text_color(t.dim).child([sv.place.name, sv.up].filter(Boolean).join(" \u00b7 "))))
+          .child(div().id(`stop-${sv.pid}`).px(6).h(24).flex().items_center().justify_center().rounded(6).flex_none()
+            .text_size(11).text_color(asking ? t.blocked : t.dim).hover((el) => el.bg(t.raised ?? t.hover))
+            .on_mouse_down("left", (_e, cx) => cx.stop_propagation())
+            .on_click((_e, cx) => { cx.stop_propagation(); this.stop(sv, cx); })
+            .child(asking ? "Stop?" : svg("mods/pane/close.svg").size(12)));
+      }));
+  }
+
+  // Worktrees of every repo that has more than one: the branch, and a gold dot when a space is open there.
+  // Click opens that space, or makes one in the worktree's folder.
+  worktreesSection(t) {
+    const sp = spaces(), ps = panes();
+    const groups = worktreeGroups(this.trees, sp.filter((s) => !s.machine).map((s) => ({ id: s.id, path: place(s, ps) })));
+    this.hasTrees = groups.length > 0;
+    if (!groups.length) return null;
+    const rows = [];
+    for (const g of groups) {
+      rows.push(h_flex().h(22).pl(16).pr(10).items_center().text_size(11).text_color(t.dim).child(g.name));
+      g.trees.forEach((wt, n) => rows.push(h_flex().id(`tree-${wt.path}`).mx(8).px(8).h(28).gap(7).items_center().rounded(7)
+        .cursor_pointer().hover((el) => el.bg(t.hover))
+        .on_click(() => (wt.space ? run("space.select", { id: wt.space }) : run("space.new", { folder: wt.path, machine: "" })))
+        .child(div().text_color(t.dim).text_size(11.5).child(n === g.trees.length - 1 ? "\u2514\u2500" : "\u251c\u2500"))
+        .child(svg("mods/workspace-chrome/branch.svg").size(13).flex_none().text_color(wt.space ? t.accent : t.dim))
+        .child(div().flex_1().min_w(0).truncate().text_color(wt.space ? t.foreground : t.muted).child(wt.branch))
+        .child(div().text_size(10.5).flex_none().text_color(wt.space ? t.accent : t.dim).child(wt.main ? "main" : wt.space ? "open" : "+ open"))));
+    }
+    return v_flex().flex_none().pt(10).pb(4).mx(-8)
+      .child(h_flex().h(31).pl(16).pr(10).items_center().text_size(11.5).text_color(t.dim).child("Worktrees"))
+      .children(rows);
+  }
+
   render() {
     const t = theme();
     const collapsed = narrow();
@@ -630,6 +749,8 @@ export default class Spaces extends View {
         .on_mouse_up("left", (_e, cx) => { this.pressed = null; cx.notify(); })
         .children(list)
         // The Reviewer section follows the last space instead of sinking to the bottom of the block.
-        .when(!collapsed && this.reviewers?.length > 0, (el) => el.child(this.reviewerSection(t))));
+        .when(!collapsed && this.reviewers?.length > 0, (el) => el.child(this.reviewerSection(t)))
+        .when(!collapsed && this.servers.length > 0, (el) => el.child(this.serversSection(t)))
+        .when(!collapsed, (el) => { const w = this.worktreesSection(t); return w ? el.child(w) : el; }));
   }
 }

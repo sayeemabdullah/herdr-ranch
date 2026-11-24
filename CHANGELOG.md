@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **Servers section.** Dev servers running in your spaces and worktrees, as cards with the port, program, space and uptime. Click to open in the browser; the x asks "Stop?" and a second press ends the process.
+- **Worktrees section.** Each repo with more than one worktree lists them, with a dot where a space is open and one click to open or create it.
 - **A new preview picture.** `preview.png` is now a banner: the pixel title, what the layout is in one line, three callouts, the real window and the twelve animals on a fence. It is drawn by `tools/preview_banner.py`. The plain dark screenshot moved to `assets/preview-dusk.png` for the theme section.
 
 ## 0.1.0
