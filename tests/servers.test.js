@@ -31,6 +31,8 @@ test("only servers running inside a space or worktree are kept, the deepest plac
   const cwds = { 101: "/Users/me/api/server", 202: "/Users/me/api/.worktrees/fix", 303: "/", 404: "/Users/me/apixx" };
   const got = pickServers(parseListeners(LSOF + "p404\ncnode\nn*:9000\n"), cwds, places);
   assert.deepEqual(got.map((s) => [s.pid, s.port, s.place.id]), [[101, 3000, "s1"], [202, 8000, "s2"]]);
+  assert.deepEqual(got[1].ports, [8000, 8001]);
+  assert.deepEqual(got[0].ports, [3000]);
 });
 
 test("an agent's own listener (Claude Code runs as 2.1.331 or claude) is not a dev server", () => {
@@ -123,4 +125,22 @@ test("a command is shown without the folder of its program", () => {
   assert.equal(shortCommand("node server.js --port 3000"), "node server.js --port 3000");
   assert.equal(shortCommand(""), "");
   assert.equal(shortCommand(undefined), "");
+});
+
+import { parseSs } from "../mods/meadows/servers.js";
+test("Linux ss output is read like lsof's", () => {
+  const out = [
+    'LISTEN 0 511 127.0.0.1:3000 0.0.0.0:* users:(("node",pid=1234,fd=19))',
+    'LISTEN 0 4096 *:8080 *:* users:(("java",pid=77,fd=5),("java",pid=78,fd=5))',
+    'LISTEN 0 128 [::1]:5432 [::]:*',
+    'LISTEN 0 128 0.0.0.0:22 0.0.0.0:*',
+    'LISTEN 0 511 [::]:3000 [::]:* users:(("node",pid=1234,fd=20))',
+  ].join("\n");
+  assert.deepEqual(parseSs(out), [
+    { pid: 1234, command: "node", port: 3000 },
+    { pid: 77, command: "java", port: 8080 },
+    { pid: 78, command: "java", port: 8080 },
+  ]);
+  assert.deepEqual(parseSs(""), []);
+  assert.deepEqual(parseSs(undefined), []);
 });
