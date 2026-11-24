@@ -44,3 +44,16 @@ test("only working, focused, newly changed or stale agents are read", () => {
   assert.equal(needsRead(base, now, now - 60 * 1000, false), false);
   assert.equal(needsRead(base, now, now - 121 * 1000, false), true);
 });
+
+import { migrateCost, COST_VERSION } from "../mods/flock/ranch.js";
+
+test("spend counted by the old reader is dropped once, and kept afterwards", () => {
+  const old = { day: "2026-11-23", shipped: 3, cost: { t1: 15, t2: 30 }, costBase: { t1: 5 } };
+  const fresh = migrateCost(old);
+  assert.deepEqual(fresh.cost, {});
+  assert.deepEqual(fresh.costBase, {});
+  assert.equal(fresh.costV, COST_VERSION);
+  assert.equal(fresh.shipped, 3);
+  const again = migrateCost({ ...fresh, cost: { t1: 2 } });
+  assert.deepEqual(again.cost, { t1: 2 });
+});

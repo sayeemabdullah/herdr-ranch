@@ -29,3 +29,10 @@ const REREAD_AFTER = 2 * MINUTE;
 export function needsRead(agent, now, lastReadAt, changed) {
   return agent.status === "working" || agent.focused || Boolean(changed) || lastReadAt == null || now - lastReadAt > REREAD_AFTER;
 }
+
+/** Bump when the way the cost is read changes, so what an older reader counted is not carried over. */
+export const COST_VERSION = 2;
+export function migrateCost(ranch) {
+  if (ranch.costV === COST_VERSION) return ranch;
+  return { ...ranch, cost: {}, costBase: {}, costV: COST_VERSION };
+}

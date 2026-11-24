@@ -6,7 +6,7 @@ import { agents, settings, terminals, panes, focused, spaces, run, theme, shared
 import { parseContext, parseModel, parseQuota, parseCost } from "./agent-stats.js";
 import { watchAgent, parseShortstat, changeSince, formatChange } from "./watch.js";
 import { castAgents } from "./casting.js";
-import { MINUTE, NAP_AFTER, ALARM_AFTER, TREE_AT, lifeOf, treeStage, worked, countsAsTask, needsRead } from "./ranch.js";
+import { MINUTE, NAP_AFTER, ALARM_AFTER, TREE_AT, lifeOf, treeStage, worked, countsAsTask, needsRead, migrateCost } from "./ranch.js";
 
 function find(node, id) {
   if (node?.id === id) return node;
@@ -197,6 +197,9 @@ export default class Agents extends View {
     if (!this.ranch || this.ranch.day !== dayKey()) this.ranch = { day: dayKey(), shipped: 0, worked: 0, bySpace: {}, cost: {}, costBase: {} };
     // Done animals tucked away with the tick, until their next task.
     try { this.settled = new Set(JSON.parse(localStorage.getItem("settled") ?? "[]")); } catch { this.settled = new Set(); }
+    // Spend an older reader counted (a dollar amount from the chat) is dropped once.
+    const migrated = migrateCost(this.ranch);
+    if (migrated !== this.ranch) { this.ranch = migrated; localStorage.setItem("ranch", JSON.stringify(this.ranch)); }
     // Warnings per agent, and each agent's uncommitted change at the start of a task and now.
     this.watchState = {};
     this.lastRead = {};
