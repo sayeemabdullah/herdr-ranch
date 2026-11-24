@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+# ranch: open VS Code in your terminal, from Herdr Ranch.
+#
+# It is a thin wrapper around terminal-code (`tode`, https://github.com/zenbu-labs/terminal-code):
+# VS Code running inside a terminal pane. Everything not listed below goes to tode unchanged.
+set -u
+
+INSTALL_HINT='curl -fsSL https://tode.sh/install | bash'
+
+usage() {
+  cat <<'TXT'
+ranch: open VS Code in this terminal (through terminal-code).
+
+  ranch                    open the current folder
+  ranch <folder|file>      open it
+  ranch review [folder]    open the source control view: what changed
+  ranch diff <a> <b>       compare two files
+  ranch <tode options>     anything else goes to tode: -g file:line:col, --split right, --ssh user@host ...
+
+Needs terminal-code (the `tode` command). Not installed yet? See https://github.com/zenbu-labs/terminal-code
+TXT
+}
+
+case "${1:-}" in
+  -h|--help|help) usage; exit 0 ;;
+esac
+
+if ! command -v tode >/dev/null 2>&1; then
+  {
+    echo "ranch: terminal-code (the 'tode' command) is not installed."
+    echo "Install it with:  $INSTALL_HINT"
+    echo "More: https://github.com/zenbu-labs/terminal-code"
+  } >&2
+  exit 127
+fi
+
+case "${1:-}" in
+  review)
+    shift
+    exec tode "$@" --review ;;
+  diff)
+    shift
+    exec tode --diff "$@" ;;
+  *)
+    exec tode "$@" ;;
+esac

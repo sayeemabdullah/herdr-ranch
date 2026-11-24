@@ -2,6 +2,11 @@
 # Installs the Herdr Ranch layout into a Herdr desktop home and switches to it.
 # Anything it would replace is first moved to backups/herdr-ranch-<time>/.
 # RANCH_NO_SWITCH=1 installs without switching the open window's layout.
+#
+#   ./install.sh               the layout, themes and mods
+#   ./install.sh --cli         also the `ranch` command (VS Code in the terminal) in ~/.local/bin
+#   ./install.sh --cli-only    only the `ranch` command
+# RANCH_BIN_DIR sets where the command goes (default ~/.local/bin).
 set -euo pipefail
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -14,6 +19,33 @@ MODS=(flock flock-toast flock-status meadows ranch-chrome ranch-tabs ranch-pane)
 THEMES=(ranch-meadow ranch-dusk)
 
 fail() { echo "install.sh: $*" >&2; exit 1; }
+
+CLI=0; CLI_ONLY=0
+for arg in "$@"; do
+  case "$arg" in
+    --cli) CLI=1 ;;
+    --cli-only) CLI=1; CLI_ONLY=1 ;;
+    -h|--help) sed -n '2,10p' "$REPO/install.sh" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    *) fail "unknown option $arg (try --help)" ;;
+  esac
+done
+
+# Copies bin/ranch next to your other commands. It never replaces a different command called ranch.
+install_cli() {
+  local dir="${RANCH_BIN_DIR:-$HOME/.local/bin}" target
+  target="$dir/ranch"
+  mkdir -p "$dir"
+  if [ -e "$target" ] && ! grep -q "^# ranch: open VS Code in your terminal" "$target" 2>/dev/null; then
+    fail "$target already exists and is not this command; not replacing it. Move it, or set RANCH_BIN_DIR."
+  fi
+  cp "$REPO/bin/ranch" "$target"
+  chmod +x "$target"
+  echo "Installed the ranch command: $target"
+  case ":$PATH:" in *":$dir:"*) ;; *) echo "  $dir is not on your PATH yet; add it to use \`ranch\`." ;; esac
+  command -v tode >/dev/null 2>&1 || echo "  It needs terminal-code (the tode command): curl -fsSL https://tode.sh/install | bash"
+}
+
+if [ "$CLI_ONLY" = 1 ]; then install_cli; exit 0; fi
 
 [ -d "$HERDR_HOME" ] || fail "no Herdr home at $HERDR_HOME. Open Herdr once, or set HERDR_APP_HOME."
 
@@ -51,6 +83,8 @@ if command -v herdr-app >/dev/null; then
       || echo "Herdr isn't running: pick Herdr Ranch with ctrl-shift-l when it opens."
   fi
 fi
+
+if [ "$CLI" = 1 ]; then install_cli; fi
 
 if [ "$(uname)" = "Darwin" ] && ! command -v terminal-notifier >/dev/null; then
   cat <<'TXT'

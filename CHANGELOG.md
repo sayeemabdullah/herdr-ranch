@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- **The `ranch` command.** Type `ranch` in any terminal to open VS Code there, through [terminal-code](https://github.com/zenbu-labs/terminal-code): `ranch`, `ranch <path>`, `ranch review` (what changed) and `ranch diff a b`; everything else goes to `tode`. Install it with `./install.sh --cli` (or `--cli-only`); it never replaces a different `ranch` and never installs terminal-code for you.
+
 ## 0.1.0
 
 First release. A herdr layout where every coding agent is its own pixel animal. Built for herdr-app 0.1.16 on macOS.

@@ -11,7 +11,7 @@
 
 <p><a href="https://github.com/sayeemabdullah/herdr-ranch/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/sayeemabdullah/herdr-ranch/ci.yml?branch=master&style=flat-square&label=CI"></a> <a href="https://herdr.dev"><img alt="herdr layout, herdr-app 0.1.16" src="https://img.shields.io/badge/herdr%20layout-0.1.16-222?style=flat-square"></a> <a href="https://nodejs.org"><img alt="Node 22 or newer, for the tests" src="https://img.shields.io/badge/node-%E2%89%A5%2022-339933?style=flat-square&logo=node.js&logoColor=white"></a> <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-0969da?style=flat-square"></a></p>
 
-[Install](#install) · [Update](#update) · [What you get](#what-you-get) · [Memory share](#memory-share) · [The cast](#the-cast) · [What it runs](#what-it-runs) · [Develop](#develop) · [Contributing](CONTRIBUTING.md)
+[Install](#install) · [Update](#update) · [What you get](#what-you-get) · [Memory share](#memory-share) · [`ranch` command](#open-vs-code-in-your-terminal-ranch) · [The cast](#the-cast) · [What it runs](#what-it-runs) · [Develop](#develop) · [Contributing](CONTRIBUTING.md)
 
 <br>
 
@@ -107,6 +107,20 @@ What it shares is the agent's recent conversation: its screen history without th
 > [!WARNING]
 > The preview can contain anything that was on the screen, such as a path or a token. Read it before you press Send. Nothing is ever sent automatically, and one press sends once.
 
+### Open VS Code in your terminal: `ranch`
+
+Type `ranch` in any terminal and VS Code opens right there, in the terminal, through [terminal-code](https://github.com/zenbu-labs/terminal-code) (its `tode` command).
+
+```sh
+ranch                  # open the current folder
+ranch src/app.js       # open a file
+ranch review           # the source control view: what an agent changed
+ranch diff a.txt b.txt # compare two files
+ranch -g app.js:40:2   # anything else goes to tode: open at line 40, column 2
+```
+
+`ranch review` pairs with the `✎ 3 files +120 −30` line on a finished card: when an agent is done, go to its folder and read the change. Install the command with `./install.sh --cli` (or `--cli-only` without the layout). It goes to `~/.local/bin` (set `RANCH_BIN_DIR` to change that) and never replaces a different command called `ranch`. You also need terminal-code itself: `curl -fsSL https://tode.sh/install | bash`. Without it, `ranch` says so and does nothing else.
+
 ### Space emblems
 
 Every space gets one of seven arch-badge emblems, the first one nobody else has. The sky changes with your clock (dawn 5-8, day 8-17, dusk 17-20, night), and a star twinkles in the corner while an agent in that space is working.
@@ -176,6 +190,7 @@ Delete what the installer added (nothing else is touched), then pick another lay
 
 ```sh
 cd ~/.config/herdr-app
+rm -f ~/.local/bin/ranch   # only if you installed the command
 rm -rf layouts/Herdr-Ranch.* themes/ranch-*.json mods/flock mods/flock-status mods/flock-toast mods/meadows mods/ranch-chrome mods/ranch-pane mods/ranch-tabs
 ```
 
@@ -213,6 +228,7 @@ These mods are trusted code. Before you install, know that:
 - `flock` also runs `hc send` once, to the agent you chose, only when you press **Send** in the Memory share window.
 - `flock-status` runs `ps`, `vm_stat`, `sysctl` and `df` (and `nproc` and `cat /proc/meminfo` on Linux) every 5 seconds for the meters.
 - `flock-toast` runs `terminal-notifier` or `osascript` (macOS) or `notify-send` (Linux) for system banners when the window is in the background, and plays the animal's sound with herdr's own `playSound`.
+- The `ranch` command (only if you install it with `--cli`) runs `tode`, terminal-code's command, when you type it, and nothing else. It does not install terminal-code for you; it prints the install line instead.
 - `ranch-chrome`, `ranch-tabs` and `ranch-pane` only draw: they read herdr's lists and the values the others publish.
 - **Nothing uses the network.**
 
@@ -239,6 +255,7 @@ python3 -m unittest discover -s tools
 | `mods/meadows` | spaces and the Reviewer section (clone of `spaces`) |
 | `mods/flock-status`, `flock-toast` | status bar and toasts |
 | `mods/ranch-chrome`, `ranch-tabs`, `ranch-pane` | sign and footer, tab bar with the ranch strip, pane header |
+| `bin/ranch` | the `ranch` command (VS Code in the terminal, through terminal-code) |
 | `tools/` | the pictures, the sounds and the demo GIF, with their tests |
 | `assets/` | `demo.gif`, `memory-share.png` |
 
@@ -248,6 +265,7 @@ python3 -m unittest discover -s tools
 
 - Built on the structure of [herdr-middle-earth](https://github.com/joaovitorwoliveira/herdr-middle-earth) by joaovitorwoliveira (MIT): the layout structure and the mods `flock`, `flock-toast`, `flock-status` and `meadows` are adapted from its mods, which are clones of herdr's own. Its copyright notice is in [NOTICE.md](NOTICE.md).
 - Ideas from [Pixel HQ](https://github.com/bnhan2710/pixel-hq) by bnhan2710: pets that nap and get an alarm, the needs-you bell, the ranch board and tree, find, and tucking finished work away. All art and code here are new.
+- The `ranch` command opens [terminal-code](https://github.com/zenbu-labs/terminal-code) by zenbu-labs: VS Code in the terminal.
 - The Reviewer section is made for [PR Reviewer for herdr](https://github.com/sayeemabdullah/herdr-PR-reviewer).
 - [herdr](https://herdr.dev) itself.
 
