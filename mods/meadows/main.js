@@ -5,7 +5,8 @@
 
 import { View, div, svg, image } from "gpui-kit";
 import { v_flex, h_flex, ScrollHandle } from "gpui-base";
-import { spaces, machines, panes, run, openOverlay, exec, hc, theme, shared, setShared, watchFolder, window, layout } from "herdr";
+import { spaces, machines, panes, terminals, run, openOverlay, exec, hc, theme, shared, setShared, watchFolder, window, layout } from "herdr";
+import { reviewerSpaces } from "./reviewer.js";
 
 function find(node, id) {
   if (node?.id === id) return node;
@@ -70,7 +71,10 @@ function emblemPicture(src, working, t) {
       .loop("opacity", { from: -1, to: 2, period: 900, easing: "linear" }));
 }
 // The PR Reviewer's space always shows the sheepdog, Scout, and never uses up an emblem.
-const REVIEWER = /pr[\s-]*reviewer/i;
+// A space is the Reviewer only while PR Reviewer's PR Panel (or its watcher) runs in it, not by its name;
+// render() refreshes this set on every pass.
+let reviewerIds = new Set();
+const isReviewer = (w) => reviewerIds.has(w.id);
 
 // Each space keeps the emblem it got first; a new one takes the first emblem no space has.
 function realmsFor(list) {
@@ -83,7 +87,7 @@ function realmsFor(list) {
     for (const id of Object.keys(realms)) if (!alive.has(id)) { delete realms[id]; changed = true; }
   }
   for (const w of list) {
-    if (realms[w.id] || REVIEWER.test(w.name ?? "")) continue;
+    if (realms[w.id] || isReviewer(w)) continue;
     const taken = new Set(Object.values(realms));
     realms[w.id] = REALMS.find((r) => !taken.has(r)) ?? REALMS[taken.size % REALMS.length];
     changed = true;
@@ -379,8 +383,8 @@ export default class Spaces extends View {
   grouped(t, collapsed) {
     const every = this.ordered();
     // The PR Reviewer's space gets a section of its own under Spaces (see reviewerSection); the rail keeps it.
-    this.reviewers = collapsed ? [] : every.filter((r) => REVIEWER.test(r.w.name ?? ""));
-    const rows = collapsed ? every : every.filter((r) => !REVIEWER.test(r.w.name ?? ""));
+    this.reviewers = collapsed ? [] : every.filter((r) => isReviewer(r.w));
+    const rows = collapsed ? every : every.filter((r) => !isReviewer(r.w));
     const draw = (r) => (collapsed ? this.compact(r, t) : this.row(r, t));
     // Where the active space's row lands among the children this returns: the list scrolls by its direct
     // children, and machine headers, login notes and loading rows count too.
@@ -536,9 +540,9 @@ export default class Spaces extends View {
           .gap(9)
           .items_center()
           .when(Boolean(tree), el => el.pl(22).child(svg("mods/workspace-chrome/branch.svg").size(13).flex_none().text_color(t.dim)))
-          .when(!tree && REVIEWER.test(w.name ?? ""), el => el.child(emblemPicture("mods/flock/sprites/sheepdog.svg", w.status === "working", t)))
-          .when(!tree && !REVIEWER.test(w.name ?? "") && Boolean(realm), el => el.child(emblemPicture(`mods/meadows/emblems/${realm}${phaseSuffix()}.svg`, w.status === "working", t)))
-          .when(!tree && !REVIEWER.test(w.name ?? "") && !realm, el => el.child(h_flex().size(18).flex_none().rounded(5).bg(fill).items_center().justify_center().text_size(10.5).font_bold().text_color("#ffffff").child([...w.name][0]?.toUpperCase() ?? "?")))
+          .when(!tree && isReviewer(w), el => el.child(emblemPicture("mods/flock/sprites/sheepdog.svg", w.status === "working", t)))
+          .when(!tree && !isReviewer(w) && Boolean(realm), el => el.child(emblemPicture(`mods/meadows/emblems/${realm}${phaseSuffix()}.svg`, w.status === "working", t)))
+          .when(!tree && !isReviewer(w) && !realm, el => el.child(h_flex().size(18).flex_none().rounded(5).bg(fill).items_center().justify_center().text_size(10.5).font_bold().text_color("#ffffff").child([...w.name][0]?.toUpperCase() ?? "?")))
           .child(div().flex_initial().min_w(SIDE_MIN).truncate().text_color(t.foreground).child(w.name))
           .child(g ? this.gitTail(g, tree, w.name, t) : div().flex_1()),
       );
@@ -593,6 +597,7 @@ export default class Spaces extends View {
   render() {
     const t = theme();
     const collapsed = narrow();
+    reviewerIds = reviewerSpaces(spaces(), panes(), terminals());
     const palette = ["ansi6", "ansi3", "ansi4", "ansi5", "ansi2", "ansi1"];
     const sp = spaces();
     const ids = new Set(sp.map(p => p.id));

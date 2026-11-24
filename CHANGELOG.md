@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- **Scout and the Reviewer section now need the PR Panel.** Before, any space with "PR Reviewer" in its name became Scout, including the space where you write the plugin. Now a space is the Reviewer only while PR Reviewer's PR Panel or watcher runs in it, whatever the space is called. A space that is only named like it is an ordinary space with an emblem.
+
 ## 0.1.0
 
 First release. A herdr layout where every coding agent is its own pixel animal. Built for herdr-app 0.1.16 on macOS.
