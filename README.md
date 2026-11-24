@@ -210,10 +210,11 @@ python3 -m unittest discover -s tools
 
 ## Credits
 
+- Built on the structure of [herdr-middle-earth](https://github.com/joaovitorwoliveira/herdr-middle-earth) by joaovitorwoliveira (MIT): the layout structure and the mods `flock`, `flock-toast`, `flock-status` and `meadows` are adapted from its mods, which are clones of herdr's own. Its copyright notice is in [NOTICE.md](NOTICE.md).
 - Ideas from [Pixel HQ](https://github.com/bnhan2710/pixel-hq) by bnhan2710: pets that nap and get an alarm, the needs-you bell, the ranch board and tree, find, and tucking finished work away. All art and code here are new.
 - The Reviewer section is made for [PR Reviewer for herdr](https://github.com/sayeemabdullah/herdr-PR-reviewer).
 - [herdr](https://herdr.dev) itself.
 
 ## License
 
-[MIT](LICENSE)
+[MIT](LICENSE). The part adapted from herdr-middle-earth keeps its own copyright notice in [NOTICE.md](NOTICE.md).
