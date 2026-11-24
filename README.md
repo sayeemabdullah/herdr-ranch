@@ -85,6 +85,8 @@ Looking at an animal (focusing its pane) resets it to "Resting". Sub-agents show
 
 Hand what one agent has been doing to another, so the second one can pick it up without you retyping it.
 
+<p align="center"><img src="assets/memory-share.png" alt="The Memory share window: Basil's portrait and title, the other agents to send to, a message line, the 20 / 40 / 80 / 160 / 300 lines switch with a custom box, and a gold-edged preview of exactly what will be sent" width="380"><br><sub>The Memory share window (names and text are made up).</sub></p>
+
 1. Hover the animal's card and press **↗**.
 2. Pick who gets it from the other agents (their animal, name, space and mood). If the other agent is working, a note says it reaches it as its next message.
 3. Write a first line, or leave it empty for `Context from <name>, so you can pick this up:`.
@@ -230,7 +232,7 @@ python3 -m unittest discover -s tools
 | `mods/flock-status`, `flock-toast` | status bar and toasts |
 | `mods/ranch-chrome`, `ranch-tabs`, `ranch-pane` | sign and footer, tab bar with the ranch strip, pane header |
 | `tools/` | the pictures, the sounds and the demo GIF, with their tests |
-| `assets/` | `demo.gif` |
+| `assets/` | `demo.gif`, `memory-share.png` |
 
 [RECIPE.md](RECIPE.md) is the full brief the layout can be rebuilt from (the format herdr.dev's gallery uses). See [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request: changes go through PRs with Conventional Commit titles, never straight to `master`.
 
