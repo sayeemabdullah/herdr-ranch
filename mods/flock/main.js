@@ -95,6 +95,7 @@ const moodOf = (status, life) => (status === "idle" ? LIFE_WORD[life] : MOOD[sta
 const titleCase = (s) => s[0].toUpperCase() + s.slice(1);
 const STATS_PERIOD = 15000;
 const SUMMARY_KEY = "flock.summary";
+const SOUND_KEY = "flock.sound";
 const SUMMARY_FRESH = 2 * 60 * MINUTE;
 // The ranch board: tasks finished today grow the tree (stages at these counts); a long wait makes it droop.
 const WAIT_DROOP = 5 * MINUTE;
@@ -896,6 +897,10 @@ export default class Agents extends View {
                 else { this.query = ""; this.search.set_value?.(""); }
                 cx.notify();
               }).child(svg("mods/workspace-chrome/search.svg").size(13)))
+            .child(div().id("ag-sound").cursor_pointer().text_size(13).text_color(shared(SOUND_KEY) === false ? t.dim : t.accent)
+              .tooltip(shared(SOUND_KEY) === false ? "Animal sounds are off. Click to turn them on." : "Animal sounds are on. Click to mute them.")
+              .on_click((_e, cx) => { setShared(SOUND_KEY, shared(SOUND_KEY) === false); cx.notify(); })
+              .child(shared(SOUND_KEY) === false ? "♪×" : "♪"))
             .child(this.bell(t, list.filter((a) => a.status === "blocked").length))
             .child(
               div()

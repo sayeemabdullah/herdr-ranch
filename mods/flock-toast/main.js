@@ -4,13 +4,15 @@
 
 import { View, div, image } from "gpui-kit";
 import { v_flex, h_flex } from "gpui-base";
-import { props, closeOverlay, run, theme, shared, exec, window, appHome, checking } from "herdr";
+import { props, closeOverlay, run, theme, shared, exec, window, appHome, checking, playSound } from "herdr";
 
 // Written by the flock mod: terminal address to animal, to its name, and to its colour variant (0 or 1).
 const CAST_KEY = "flock.cast";
 const NAMES_KEY = "flock.names";
 const VARIANT_KEY = "flock.variant";
 const SUMMARY_KEY = "flock.summary";
+// The animal sounds are on unless the flock mod's speaker button turned them off (shared `flock.sound`).
+const SOUND_KEY = "flock.sound";
 const ICON_SIZE = 28;
 // Herdr's own agent toasts read "<program> finished" or "<program> needs you".
 const AGENT_TOAST = /^(.+) (finished|needs you)$/;
@@ -78,6 +80,7 @@ function animalOf(p) {
     body,
     icon: `mods/flock/sprites/${id}-${pose}.svg`,
     banner: `mods/flock/banners/${id}-${pose}.png`,
+    sound: `mods/flock/sounds/${animal}.wav`,
   };
 }
 
@@ -87,9 +90,11 @@ export default class Toast extends View {
   // init, not render: from another macOS Space the window may not draw, so render may not run.
   init() {
     const w = window();
-    if (checking() || !w || w.active) return;
     const raw = props() ?? {};
     const p = { ...raw, ...animalOf(raw) };
+    // The animal says its piece whenever its toast appears, in the window or behind another app.
+    if (!checking() && p.sound && shared(SOUND_KEY) !== false) playSound(p.sound);
+    if (checking() || !w || w.active) return;
     postToSystem(w.platform, p.title ?? "Herdr", p.body ?? "", p.banner);
   }
 
