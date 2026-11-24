@@ -82,6 +82,17 @@ A **Herdr Ranch** sign whose barn follows the clock; gold-boxed pixel tabs; a **
 > [!NOTE]
 > Some numbers need the agent's screen to show them. Context, quota and cost are read from a Claude Code-style status line (`ctx 5%`, `5h 32%`, `$0.01`). An agent whose screen doesn't show them just doesn't get that bar.
 
+### Two themes
+
+Both follow your system's light or dark mode, and the animals stay readable on each.
+
+<table>
+<tr>
+<td align="center" width="50%"><img src="preview.png" alt="Ranch Dusk, the dark plum theme" width="440"><br><b>Ranch Dusk</b><br><sub>plum, gold accents</sub></td>
+<td align="center" width="50%"><img src="preview-light.png" alt="Ranch Meadow, the light sage theme" width="440"><br><b>Ranch Meadow</b><br><sub>light sage, green accents</sub></td>
+</tr>
+</table>
+
 ## Install
 
 You need **herdr-app 0.1.16** (macOS tested; Linux and Windows follow the docs and are untested). Python is only needed to change the art, Node only for the tests.

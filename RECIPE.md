@@ -4,6 +4,8 @@ Your coding agents become animals on a ranch. Each agent is its own pixel animal
 
 ![Herdr Ranch](preview.png)
 
+The light theme, Ranch Meadow, is in `preview-light.png`.
+
 ## What you see
 
 A row with no system title bar (`"titlebar": "none"`). The macOS window buttons sit at `[12, 16]`. UI font `.SystemUIFont`. A 1px `border` divider runs between the columns. The right side of the window has nothing in it.
