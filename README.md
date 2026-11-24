@@ -6,6 +6,8 @@
 
 **Every coding agent is its own pixel animal on a ranch.**<br>
 **A herdr layout with a skin, a ranch board and a few tools that help you work.**
+<br>
+<sub>Built on the structure of <a href="https://github.com/joaovitorwoliveira/herdr-middle-earth">herdr-middle-earth</a> (MIT).</sub>
 
 <p><a href="https://github.com/sayeemabdullah/herdr-ranch/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/sayeemabdullah/herdr-ranch/ci.yml?branch=master&style=flat-square&label=CI"></a> <a href="https://herdr.dev"><img alt="herdr layout, herdr-app 0.1.16" src="https://img.shields.io/badge/herdr%20layout-0.1.16-222?style=flat-square"></a> <a href="https://nodejs.org"><img alt="Node 22 or newer, for the tests" src="https://img.shields.io/badge/node-%E2%89%A5%2022-339933?style=flat-square&logo=node.js&logoColor=white"></a> <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-0969da?style=flat-square"></a></p>
 
@@ -79,6 +81,17 @@ A **Herdr Ranch** sign whose barn follows the clock; gold-boxed pixel tabs; a **
 
 > [!NOTE]
 > Some numbers need the agent's screen to show them. Context, quota and cost are read from a Claude Code-style status line (`ctx 5%`, `5h 32%`, `$0.01`). An agent whose screen doesn't show them just doesn't get that bar.
+
+### Two themes
+
+Both follow your system's light or dark mode, and the animals stay readable on each.
+
+<table>
+<tr>
+<td align="center" width="50%"><img src="preview.png" alt="Ranch Dusk, the dark plum theme" width="440"><br><b>Ranch Dusk</b><br><sub>plum, gold accents</sub></td>
+<td align="center" width="50%"><img src="preview-light.png" alt="Ranch Meadow, the light sage theme" width="440"><br><b>Ranch Meadow</b><br><sub>light sage, green accents</sub></td>
+</tr>
+</table>
 
 ## Install
 
@@ -169,7 +182,6 @@ python3 -m unittest discover -s tools
 
 ## Credits
 
-- Built on the structure of [herdr-middle-earth](https://github.com/joaovitorwoliveira/herdr-middle-earth) (MIT). The mods here are adapted from its mods, which are clones of herdr's own.
 - Ideas from [Pixel HQ](https://github.com/bnhan2710/pixel-hq) by bnhan2710: pets that nap and get an alarm, the needs-you bell, the ranch board and tree, find, and tucking finished work away. All art and code here are new.
 - The Reviewer section is made for [PR Reviewer for herdr](https://github.com/sayeemabdullah/herdr-PR-reviewer).
 - [herdr](https://herdr.dev) itself.
