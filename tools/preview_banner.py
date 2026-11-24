@@ -129,7 +129,7 @@ def main(shot_path=None):
     d.text(((W - d.textlength(sub, font=f2)) / 2, 226), sub, font=f2, fill=(214, 170, 200))
 
     # the real window, with a shadow and a gold edge
-    wx, wy, ww = 690, 290, 840
+    wx, wy, ww = 780, 290, 760
     crop = shot.crop((0, 0, 1130, 640))
     wh = int(ww * crop.height / crop.width)
     win = rounded_window(crop, (ww, wh))
@@ -144,32 +144,34 @@ def main(shot_path=None):
 
     # callouts
     items = [
-        ("Every agent is an animal", "A random pixel animal and name for each one. Three rare ones: fox, owl, dragon."),
-        ("They live their day", "Nap when idle, ring the bell when stuck, throw confetti when done. A tree grows."),
+        ("Every agent is an animal", "A random pixel animal and name for each one. Three rare: fox, owl, dragon."),
+        ("They live their day", "Nap when idle, ring the alarm, throw confetti when done. A tree grows."),
+        ("Hand off with Memory share", "Press the arrow on a card to send its recent screen to another agent. You read the preview first."),
         ("Scout reviews your PRs", "A sheepdog gets its own Reviewer section when the PR panel is open."),
     ]
-    fh, fb = font(31, HEAVY), font(22, MED)
-    y = 300
+    fh, fb = font(29, HEAVY), font(20, MED)
+    y = 292
     for i, (head, body) in enumerate(items, 1):
-        d.ellipse((60, y, 108, y + 48), fill=GOLD)
+        d.ellipse((60, y, 106, y + 46), fill=GOLD)
         n = str(i)
-        d.text((84 - d.textlength(n, font=fh) / 2, y + 2), n, font=fh, fill=DEEP)
-        d.text((128, y - 2), head, font=fh, fill=CREAM)
-        words, line, ly = body.split(), "", y + 44
+        d.text((83 - d.textlength(n, font=fh) / 2, y + 3), n, font=fh, fill=DEEP)
+        d.text((124, y - 2), head, font=fh, fill=CREAM)
+        words, line, ly = body.split(), "", y + 36
         for wd in words:
             t = (line + " " + wd).strip()
-            if d.textlength(t, font=fb) > 470:
-                d.text((128, ly), line, font=fb, fill=(226, 190, 214))
-                line, ly = wd, ly + 29
+            if d.textlength(t, font=fb) > 635:
+                d.text((124, ly), line, font=fb, fill=(226, 190, 214))
+                line, ly = wd, ly + 26
             else:
                 line = t
-        d.text((128, ly), line, font=fb, fill=(226, 190, 214))
-        y += 140
-    d.line((60, 722, 590, 722), fill=(143, 79, 128), width=2)
-    d.text((60, 734), "Memory share · sounds · CPU/RAM/disk · 2 themes", font=font(20, BOLD), fill=GOLD)
+        d.text((124, ly), line, font=fb, fill=(226, 190, 214))
+        y += 106
+    ft = font(19, BOLD)
+    d.text((60, 722), "Also: needs-you bell  ·  find  ·  what a task changed  ·  honest spend", font=ft, fill=GOLD)
+    d.text((60, 748), "chiptune sounds  ·  day and night emblems  ·  CPU / RAM / disk  ·  2 themes", font=ft, fill=GOLD)
 
     # fence and the herd
-    fy = 905
+    fy = 918
     for fx in range(0, W, 64):
         d.rectangle((fx + 20, fy - 40, fx + 34, fy + 55), fill=(122, 78, 44))
         d.rectangle((fx + 20, fy - 40, fx + 34, fy - 34), fill=(166, 112, 66))
