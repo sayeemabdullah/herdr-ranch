@@ -92,7 +92,7 @@ Hand what one agent has been doing to another, so the second one can pick it up 
 5. Read the preview. It is exactly the message, nothing more.
 6. Press the gold **Send to** button, which names who it goes to. Esc or Cancel sends nothing.
 
-What it shares is the agent's recent conversation: its screen history without the status line, prompt box and separators, pasted into the other agent as its next message (with `hc send`). It does not copy memory files, `CLAUDE.md` or skills; to share skill files between agents, use [skillshare](https://github.com/runkids/skillshare).
+What it shares is the agent's recent conversation: its screen history without the status line, prompt box and separators, pasted into the other agent as its next message (with `hc send`). It does not copy memory files, `CLAUDE.md` or skills.
 
 > [!WARNING]
 > The preview can contain anything that was on the screen, such as a path or a token. Read it before you press Send. Nothing is ever sent automatically, and one press sends once.
