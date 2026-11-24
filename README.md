@@ -19,6 +19,14 @@
 
 <br>
 
+<img src="mods/flock/sprites/sheep.svg" width="56" alt="sheep"> <img src="mods/flock/sprites/goat.svg" width="56" alt="goat"> <img src="mods/flock/sprites/rabbit.svg" width="56" alt="rabbit"> <img src="mods/flock/sprites/chicken.svg" width="56" alt="chicken"> <img src="mods/flock/sprites/cow.svg" width="56" alt="cow"> <img src="mods/flock/sprites/horse.svg" width="56" alt="horse"> <img src="mods/flock/sprites/duck.svg" width="56" alt="duck"> <img src="mods/flock/sprites/llama.svg" width="56" alt="llama"> <img src="mods/flock/sprites/fox.svg" width="56" alt="fox"> <img src="mods/flock/sprites/owl.svg" width="56" alt="owl"> <img src="mods/flock/sprites/dragon.svg" width="56" alt="dragon"> <img src="mods/flock/sprites/sheepdog.svg" width="56" alt="sheepdog"><br>
+<sub>8 common animals, 3 rare ones (fox, owl, dragon) and Scout the sheepdog for the PR Reviewer. <a href="#the-cast">Meet the cast</a></sub>
+
+<br>
+
+**In motion**<br>
+<sub>Steps, dots, naps, the alarm, confetti and the bell, on the real timings.</sub>
+
 <img src="assets/demo.gif" alt="The Agents list in motion: a sheep stepping with bouncing dots, a rabbit with a needs-you badge, a cow with confetti, a fox napping, and the bell ringing" width="268"><br>
 <sub>The Agents list in motion, drawn from the real sprites and timings (not a screen recording).</sub>
 
