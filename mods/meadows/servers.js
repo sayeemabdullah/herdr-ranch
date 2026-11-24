@@ -41,6 +41,9 @@ export function parseUptimes(out) {
   return ups;
 }
 
+// Agents' own listeners are not dev servers: Claude Code runs as a version-named program (2.1.331) or `claude`.
+const AGENT_PROGRAM = /^(claude|codex|\d+(\.\d+)+)$/i;
+
 const inside = (cwd, path) => cwd === path || cwd.startsWith(path.replace(/\/+$/, "") + "/");
 
 /**
@@ -52,7 +55,7 @@ export function pickServers(listeners, cwds, places) {
   const byPid = new Map();
   for (const l of listeners ?? []) {
     const cwd = cwds?.[l.pid];
-    if (!cwd) continue;
+    if (!cwd || AGENT_PROGRAM.test(l.command)) continue;
     const place = (places ?? []).filter((p) => p.path && inside(cwd, p.path)).sort((a, b) => b.path.length - a.path.length)[0];
     if (!place) continue;
     const have = byPid.get(l.pid);

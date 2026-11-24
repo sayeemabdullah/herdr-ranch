@@ -33,6 +33,14 @@ test("only servers running inside a space or worktree are kept, the deepest plac
   assert.deepEqual(got.map((s) => [s.pid, s.port, s.place.id]), [[101, 3000, "s1"], [202, 8000, "s2"]]);
 });
 
+test("an agent's own listener (Claude Code runs as 2.1.331 or claude) is not a dev server", () => {
+  const places = [{ id: "s1", name: "api", path: "/Users/me/api" }];
+  const got = pickServers(
+    [{ pid: 1, command: "2.1.331", port: 50479 }, { pid: 2, command: "claude", port: 50480 }, { pid: 3, command: "node", port: 5181 }],
+    { 1: "/Users/me/api", 2: "/Users/me/api", 3: "/Users/me/api" }, places);
+  assert.deepEqual(got.map((s) => s.port), [5181]);
+});
+
 test("worktrees are parsed, main first, dropping bare and prunable ones", () => {
   const out = "worktree /r/app\nHEAD abc\nbranch refs/heads/main\n\nworktree /r/app-fix\nHEAD def\nbranch refs/heads/fix/login\n\nworktree /r/old\nHEAD 000\ndetached\nprunable gitdir file points to non-existent location\n\nworktree /r/det\nHEAD 111\ndetached\n";
   assert.deepEqual(parseWorktrees(out), [
