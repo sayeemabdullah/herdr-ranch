@@ -17,6 +17,11 @@
 
 <img src="preview.png" alt="Herdr Ranch: spaces with arch-badge emblems, the Reviewer section with Scout, the ranch board and agent cards, a gold-boxed tab bar and a plain terminal" width="900">
 
+<br>
+
+<img src="assets/demo.gif" alt="The Agents list in motion: a sheep stepping with bouncing dots, a rabbit with a needs-you badge, a cow with confetti, a fox napping, and the bell ringing" width="268"><br>
+<sub>The Agents list in motion, drawn from the real sprites and timings (not a screen recording).</sub>
+
 </div>
 
 <br>

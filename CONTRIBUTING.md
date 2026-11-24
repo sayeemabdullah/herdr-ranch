@@ -16,6 +16,8 @@ Thanks for helping! Changes go through pull requests: `master` can't be pushed t
 
 The animal sounds are drawn in code too: edit `tools/sounds.py`, run `python3 tools/sounds.py` and commit the regenerated WAVs. Every picture is drawn in code in `tools/sprites.py`. Edit the drawing functions, never the SVGs, then run `python3 tools/sprites.py` and commit the regenerated files. The top-left 6x6 of every standing animal must stay empty (badges are drawn there); a test enforces it.
 
+If you change how the cards animate, regenerate the README's demo with `python3 tools/demo_gif.py`.
+
 ## PR titles
 
 PR titles follow [Conventional Commits](https://www.conventionalcommits.org):
