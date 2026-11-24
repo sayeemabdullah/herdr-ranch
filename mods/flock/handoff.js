@@ -1,7 +1,14 @@
 // A handoff is a note from one agent to another: the recent conversation on its screen, previewed by
 // the person and sent only when they press Send. Pure helpers; the popup is in main.js.
 
-export const CAP = 4000;
+export const CAP = 12000;
+export const MAX_LINES = 1000;
+
+/** A number of lines from typed text: a whole number from 1 to 1000, or null. */
+export function parseLines(text) {
+  const n = Number(String(text ?? "").trim());
+  return Number.isInteger(n) && n >= 1 && n <= MAX_LINES ? n : null;
+}
 
 // Rows that are the program's chrome, not the conversation: separators, the prompt box, the status line.
 const NOISE = [

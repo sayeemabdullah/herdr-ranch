@@ -1,7 +1,7 @@
 // Run with: node --test tests/handoff.test.js
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { pickContext, buildHandoff, CAP } from "../mods/flock/handoff.js";
+import { pickContext, buildHandoff, parseLines, CAP, MAX_LINES } from "../mods/flock/handoff.js";
 
 const screen = [
   "Added rate limiting to the signup route.",
@@ -44,4 +44,18 @@ test("buildHandoff says who it is from, shows the intro and wraps the context", 
   const text = buildHandoff({ from: "Basil", intro: "  Pick this up, please.  ", context: "did a thing" });
   assert.equal(text, "Pick this up, please.\n\n--- Basil's recent screen ---\ndid a thing\n--- end ---");
   assert.match(buildHandoff({ from: "Basil", intro: "", context: "x" }), /^Context from Basil/);
+});
+
+test("parseLines takes a whole number of lines from 1 to 1000 and nothing else", () => {
+  assert.equal(MAX_LINES, 1000);
+  assert.equal(parseLines(" 150 "), 150);
+  assert.equal(parseLines("1000"), 1000);
+  for (const bad of ["", "0", "1001", "-5", "12.5", "abc", null, undefined]) assert.equal(parseLines(bad), null, String(bad));
+});
+
+test("a longer span keeps more of a long screen, up to the cap", () => {
+  const long = Array.from({ length: 600 }, (_, i) => `line ${i}`).join("\n");
+  assert.equal(pickContext(long, 300).split("\n").length, 300);
+  assert.equal(pickContext(long, 600).split("\n").length, 600);
+  assert.equal(CAP, 12000);
 });
