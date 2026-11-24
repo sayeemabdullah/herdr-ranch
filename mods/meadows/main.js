@@ -5,9 +5,9 @@
 
 import { View, div, svg, image } from "gpui-kit";
 import { v_flex, h_flex, ScrollHandle } from "gpui-base";
-import { spaces, machines, panes, terminals, run, openOverlay, exec, hc, theme, shared, setShared, watchFolder, window, layout, notify } from "herdr";
+import { spaces, machines, panes, terminals, run, openOverlay, exec, hc, theme, shared, setShared, watchFolder, window, layout, notify, props, closeOverlay } from "herdr";
 import { reviewerSpaces } from "./reviewer.js";
-import { parseListeners, parseCwds, parseUptimes, parseCommands, pickServers, trackGone, shortCommand } from "./servers.js";
+import { parseListeners, parseCwds, parseUptimes, parseCommands, parseSs, pickServers, trackGone, shortCommand } from "./servers.js";
 import { parseWorktrees, worktreeGroups, parsePr } from "./worktrees.js";
 
 function find(node, id) {
@@ -61,6 +61,12 @@ const REALMS_KEY = "meadows.emblems";
 // Each running server is a barnyard critter, kept per port; a server that ended wears the red badge.
 const CRITTERS = ["pig", "cat", "frog", "hedgehog"];
 const CRITTERS_KEY = "meadows.critters";
+// Sections the person can hide (the "..." button next to Spaces): shared state, so every window agrees.
+const HIDE_KEY = "ranch.hide";
+const hidden = (key) => (shared(HIDE_KEY) ?? {})[key] === true;
+const FOLD_KEY = "ranch.folded";
+// A shell that runs one command the way the person's own terminal would (their PATH), on macOS and Linux.
+const inLoginShell = (cmd) => ["/bin/sh", "-c", 'exec "${SHELL:-/bin/sh}" -lc "$0"', cmd];
 function critterPicture(name, state) {
   const sprite = (file) => image(`mods/flock/sprites/${file}.svg`).w(32).h(32).flex_none();
   if (state !== "running") return sprite(`${name}-blocked`);
@@ -119,6 +125,8 @@ export function tone(t, status) {
 
 export default class Spaces extends View {
   init(_props, cx) {
+    if (props()?.ranchSettings) return; // the "Show in the sidebar" popup needs none of the below
+    try { this.sectionsFolded = new Set(JSON.parse(localStorage.getItem(FOLD_KEY) ?? '["worktrees"]')); } catch { this.sectionsFolded = new Set(["worktrees"]); }
     this.git = {}; // where() -> { name, branch, ahead, behind, repo, linked }, null: not a repo
     this.checked = {}; // where() -> when it was last looked at
     this.unsure = new Set(); // where()s git couldn't answer for (a machine away)
@@ -190,10 +198,23 @@ export default class Spaces extends View {
       const sp = spaces(), ps = panes();
       const places = sp.filter((s) => !s.machine).map((s) => ({ id: s.id, name: s.name, path: place(s, ps) })).filter((p) => p.path);
       for (const g of this.trees) for (const t of g.trees) if (!places.some((p) => p.path === t.path)) places.push({ id: null, name: t.branch, path: t.path });
-      const listen = await exec("lsof", ["-nP", "-iTCP", "-sTCP:LISTEN", "-Fpcn"]);
-      const listeners = parseListeners(listen.stdout);
+      const linux = window()?.platform !== "macos";
+      let listeners = [];
+      if (linux) {
+        const ss = await exec("ss", ["-H", "-ltnp"]).catch(() => null);
+        if (ss?.code === 0) listeners = parseSs(ss.stdout);
+      }
+      if (!listeners.length) listeners = parseListeners((await exec("lsof", ["-nP", "-iTCP", "-sTCP:LISTEN", "-Fpcn"]).catch(() => ({ stdout: "" }))).stdout);
       const pids = [...new Set(listeners.map((l) => l.pid))];
-      const cwds = pids.length ? parseCwds((await exec("lsof", ["-a", "-d", "cwd", "-Fpn", "-p", pids.join(",")])).stdout) : {};
+      let cwds = {};
+      if (pids.length) {
+        // Linux keeps each process's folder in /proc; macOS asks lsof.
+        const proc = linux
+          ? await exec("sh", ["-c", 'for p in "$@"; do printf "p%s\\nn%s\\n" "$p" "$(readlink /proc/$p/cwd 2>/dev/null)"; done', "sh", ...pids.map(String)]).catch(() => null)
+          : null;
+        cwds = proc?.code === 0 ? parseCwds(proc.stdout) : {};
+        if (!Object.keys(cwds).length) cwds = parseCwds((await exec("lsof", ["-a", "-d", "cwd", "-Fpn", "-p", pids.join(",")]).catch(() => ({ stdout: "" }))).stdout);
+      }
       const picked = pickServers(listeners, cwds, places);
       const ups = picked.length ? parseUptimes((await exec("ps", ["-o", "pid=,etime=", "-p", picked.map((x) => x.pid).join(",")])).stdout) : {};
       const cmds = picked.length ? parseCommands((await exec("ps", ["-o", "pid=,command=", "-p", picked.map((x) => x.pid).join(",")])).stdout) : {};
@@ -471,8 +492,9 @@ export default class Spaces extends View {
   grouped(t, collapsed) {
     const every = this.ordered();
     // The PR Reviewer's space gets a section of its own under Spaces (see reviewerSection); the rail keeps it.
-    this.reviewers = collapsed ? [] : every.filter((r) => isReviewer(r.w));
-    const rows = collapsed ? every : every.filter((r) => !isReviewer(r.w));
+    const split = !collapsed && !hidden("reviewer");
+    this.reviewers = split ? every.filter((r) => isReviewer(r.w)) : [];
+    const rows = split ? every.filter((r) => !isReviewer(r.w)) : every;
     const draw = (r) => (collapsed ? this.compact(r, t) : this.row(r, t));
     // Where the active space's row lands among the children this returns: the list scrolls by its direct
     // children, and machine headers, login notes and loading rows count too.
@@ -652,6 +674,26 @@ export default class Spaces extends View {
       .child(div().absolute().right(5).text_color(tone(t, w.status)).child(glyph(w.status))));
   }
 
+  toggleFold(key, cx) {
+    if (this.sectionsFolded.has(key)) this.sectionsFolded.delete(key); else this.sectionsFolded.add(key);
+    try { localStorage.setItem(FOLD_KEY, JSON.stringify([...this.sectionsFolded])); } catch { /* ignore */ }
+    cx.notify();
+  }
+
+  // A section's heading: a chevron, the name, a count, and a click to fold it. A thin line sets it off from the one above.
+  sectionHeader(t, key, label, count, extra) {
+    const open = !this.sectionsFolded.has(key);
+    return v_flex().flex_none()
+      .child(div().h(1).mx(16).mt(8).mb(4).bg(t.border).opacity(0.45))
+      .child(h_flex().id(`fold-${key}`).h(28).pl(12).pr(10).gap(5).items_center().cursor_pointer().text_size(11.5).text_color(t.dim)
+        .hover((el) => el.text_color(t.foreground))
+        .on_click((_e, cx) => this.toggleFold(key, cx))
+        .child(svg(`mods/workspace-chrome/chevron-${open ? "down" : "right"}.svg`).size(12).flex_none())
+        .child(div().flex_1().child(label))
+        .when(count != null, (el) => el.child(div().text_color(t.dim).child(String(count))))
+        .when(Boolean(extra), (el) => el.child(extra)));
+  }
+
   // A section like Spaces and Agents, there only while a PR Reviewer space exists: Scout, what it is doing,
   // and one click to its space.
   reviewerSection(t) {
@@ -668,9 +710,9 @@ export default class Spaces extends View {
         .child(still.loop("opacity", { from: 7, to: -6, period, easing: "linear" }))
         .child(sprite(next).absolute().top(0).left(0).loop("opacity", { from: -6, to: 7, period, easing: "linear" }));
     };
-    return v_flex().flex_none().pt(10).pb(4).mx(-8)
-      .child(h_flex().h(31).pl(16).pr(10).items_center().text_size(11.5).text_color(t.dim).child("Reviewer"))
-      .children(this.reviewers.map(({ w }) => h_flex().id(`reviewer-${w.id}`).mx(8).my(2).px(8).h(50).gap(10).items_center().rounded(8)
+    return v_flex().flex_none().pb(4).mx(-8)
+      .child(this.sectionHeader(t, "reviewer", "Reviewer", null))
+      .children(this.sectionsFolded.has("reviewer") ? [] : this.reviewers.map(({ w }) => h_flex().id(`reviewer-${w.id}`).mx(8).my(2).px(8).h(50).gap(10).items_center().rounded(8)
         .border(1).border_color(w.active ? t.input : t.border)
         .when(w.active, (el) => el.bg(t.selected))
         .cursor_pointer().hover((el) => el.bg(t.hover))
@@ -700,7 +742,7 @@ export default class Spaces extends View {
 
   // Run the stopped server's command again, in a tab you can see, in the folder it ran in.
   restart(g, cx) {
-    const args = { folder: g.cwd, argv: ["/bin/zsh", "-lc", g.cmd], name: `:${g.port}` };
+    const args = { folder: g.cwd, argv: inLoginShell(g.cmd), name: `:${g.port}` };
     if (g.place.id) run("tab.new", { ...args, space: g.place.id });
     else run("space.new", { folder: g.cwd, machine: "", argv: args.argv });
     this.gone = this.gone.filter((x) => x.pid !== g.pid);
@@ -732,62 +774,74 @@ export default class Spaces extends View {
     this.prsBusy = false;
   }
 
-  // A section like Reviewer: the servers running in your projects, nicely. Click one to open it in the browser;
+  // A section like Reviewer: the servers running in your projects. Click one to open it in the browser;
   // the x asks "Stop?" and a second press ends the process.
   serversSection(t) {
     const critters = this.critters();
-    const sp = spaces();
-    return v_flex().flex_none().pt(10).pb(4).mx(-8)
-      .child(h_flex().h(31).pl(16).pr(10).items_center().justify_between().text_size(11.5).text_color(t.dim)
-        .child("Servers").child(div().text_color(t.dim).child(String(this.servers.length))))
-      .children(this.gone.map((g) => h_flex().id(`gone-${g.pid}`).mx(8).my(2).px(8).h(46).gap(10).items_center().rounded(8)
-        .border(1).border_color(t.blocked ?? t.border)
-        .child(critterPicture(critters[g.port] ?? CRITTERS[0], "gone"))
+    const folded = this.sectionsFolded.has("servers");
+    const card = (id, red) => h_flex().id(id).mx(8).my(2).px(8).h(44).gap(9).items_center().rounded(8).border(1).border_color(red ? t.blocked : t.border);
+    const goneRows = this.gone.map((g) => card(`gone-${g.pid}`, true)
+      .child(critterPicture(critters[g.port] ?? CRITTERS[0], "gone"))
+      .child(v_flex().flex_1().min_w(0)
+        .child(h_flex().gap(6).items_baseline()
+          .child(div().flex_none().font_semibold().text_color(t.blocked).child(`:${g.port}`))
+          .child(div().truncate().min_w(0).text_color(t.muted).child("stopped")))
+        .child(div().truncate().text_size(11).text_color(t.dim).child(shortCommand(g.cmd))))
+      .child(div().id(`restart-${g.pid}`).px(8).h(24).flex().items_center().rounded(6).flex_none().text_size(11).text_color(t.accent)
+        .cursor_pointer().hover((el) => el.bg(t.raised ?? t.hover))
+        .on_click((_e, cx) => this.restart(g, cx))
+        .child(h_flex().gap(5).items_center().child(image("mods/flock/icons/ui-play.svg").w(12).h(12).flex_none()).child("Restart"))));
+    const rows = this.servers.map((sv) => {
+      const asking = this.stopping?.pid === sv.pid && Date.now() < this.stopping.until;
+      return card(`server-${sv.pid}`, false).cursor_pointer().hover((el) => el.bg(t.hover))
+        .on_click((_e, cx) => cx.open_url(`http://localhost:${sv.port}`))
+        .child(critterPicture(critters[sv.port] ?? CRITTERS[0], "running"))
         .child(v_flex().flex_1().min_w(0)
-          .child(h_flex().gap(6).items_baseline().child(div().font_semibold().text_color(t.blocked ?? t.foreground).child(`:${g.port}`)).child(div().truncate().text_color(t.muted).child("stopped")))
-          .child(div().truncate().text_size(11).text_color(t.dim).child(shortCommand(g.cmd))))
-        .child(div().id(`restart-${g.pid}`).px(8).h(24).flex().items_center().rounded(6).flex_none().text_size(11).text_color(t.accent ?? t.foreground)
-          .cursor_pointer().hover((el) => el.bg(t.raised ?? t.hover))
-          .on_click((_e, cx) => this.restart(g, cx)).child(h_flex().gap(5).items_center().child(image("mods/flock/icons/ui-play.svg").w(12).h(12).flex_none()).child("Restart")))))
-      .children(this.servers.map((sv) => {
-        const asking = this.stopping?.pid === sv.pid && Date.now() < this.stopping.until;
-        return h_flex().id(`server-${sv.pid}`).mx(8).my(2).px(8).h(50).gap(10).items_center().rounded(8)
-          .border(1).border_color(t.border)
-          .cursor_pointer().hover((el) => el.bg(t.hover))
-          .on_click((_e, cx) => cx.open_url(`http://localhost:${sv.port}`))
-          .child(critterPicture(critters[sv.port] ?? CRITTERS[0], "running"))
-          .child(v_flex().flex_1().min_w(0)
-            .child(h_flex().gap(6).items_baseline()
-              .child(div().font_semibold().text_color(t.accent ?? t.foreground).child(`:${sv.port}`))
-              .child(div().truncate().text_color(t.foreground).child(sv.command)))
-            .child(div().truncate().text_size(11).text_color(t.dim).child([sv.place.name, sv.up].filter(Boolean).join(" \u00b7 "))))
-          .child(div().id(`stop-${sv.pid}`).px(6).h(24).flex().items_center().justify_center().rounded(6).flex_none()
-            .text_size(11).text_color(asking ? t.blocked : t.dim).hover((el) => el.bg(t.raised ?? t.hover))
-            .on_mouse_down("left", (_e, cx) => cx.stop_propagation())
-            .on_click((_e, cx) => { cx.stop_propagation(); this.stop(sv, cx); })
-            .child(asking ? "Stop?" : image("mods/flock/icons/ui-x.svg").w(12).h(12).flex_none()));
-      }));
+          .child(h_flex().gap(6).items_baseline()
+            // The port never shrinks or wraps: the program name gives way instead.
+            .child(div().flex_none().whitespace_nowrap().font_semibold().text_color(t.accent).child(`:${sv.port}`))
+            .when((sv.ports?.length ?? 1) > 1, (el) => el.child(div().flex_none().text_size(10.5).text_color(t.dim).child(`+${sv.ports.length - 1}`)))
+            .child(div().truncate().min_w(0).text_color(t.foreground).child(sv.command)))
+          .child(div().truncate().text_size(11).text_color(t.dim).child([sv.place.name, sv.up].filter(Boolean).join(" \u00b7 "))))
+        .child(div().id(`stop-${sv.pid}`).px(6).h(24).flex().items_center().justify_center().rounded(6).flex_none()
+          .text_size(11).text_color(asking ? t.blocked : t.dim).hover((el) => el.bg(t.raised ?? t.hover))
+          .on_mouse_down("left", (_e, cx) => cx.stop_propagation())
+          .on_click((_e, cx) => { cx.stop_propagation(); this.stop(sv, cx); })
+          .child(asking ? "Stop?" : svg("mods/flock/icons/ui-x.svg").size(12).text_color(asking ? t.blocked : t.dim).flex_none()));
+    });
+    return v_flex().flex_none().pb(4).mx(-8)
+      .child(this.sectionHeader(t, "servers", "Servers", this.servers.length))
+      .children(folded ? [] : [...goneRows, ...rows]);
   }
 
-  // Worktrees of every repo that has more than one: the branch, and a gold dot when a space is open there.
-  // Click opens that space, or makes one in the worktree's folder.
+  // Worktrees of every repo that has more than one: the main checkout, the ones with a space open, and a few more;
+  // "+ N more" opens the full list, where a worktree can be opened or deleted.
   worktreesSection(t) {
     const sp = spaces(), ps = panes();
     const groups = worktreeGroups(this.trees, sp.filter((s) => !s.machine).map((s) => ({ id: s.id, path: place(s, ps) })));
-    this.hasTrees = groups.length > 0;
     if (!groups.length) return null;
+    const folded = this.sectionsFolded.has("worktrees");
+    const total = groups.reduce((n, g) => n + g.trees.length, 0);
     const rows = [];
     for (const g of groups) {
-      const mainPath = (g.trees.find((x) => x.main) ?? g.trees[0]).path;
-      rows.push(h_flex().h(24).pl(16).pr(10).items_center().justify_between().text_size(11).text_color(t.dim).child(g.name)
-        .child(div().id(`tree-new-${mainPath}`).size(22).flex().items_center().justify_center().rounded(6).text_size(13)
+      const mainTree = g.trees.find((x) => x.main) ?? g.trees[0];
+      const openSpace = g.trees.find((x) => x.space)?.space;
+      const props = openSpace ? { space: openSpace } : { folder: mainTree.path };
+      const dialog = (action) => openOverlay({ mod: "ranch-worktree", kind: "dialog", width: action === "open" ? 560 : 480, height: action === "open" ? 520 : 330, props: { ...props, ...(action === "open" ? { action: "open" } : { argv: ["claude"] }) } });
+      // The main checkout and every open one, then up to 3 more.
+      const keep = new Set(g.trees.filter((x) => x.main || x.space).map((x) => x.path));
+      for (const x of g.trees) if (keep.size < 3 + g.trees.filter((y) => y.main || y.space).length && !keep.has(x.path)) keep.add(x.path);
+      const shown = g.trees.filter((x) => keep.has(x.path));
+      const more = g.trees.length - shown.length;
+      rows.push(h_flex().h(26).pl(16).pr(8).items_center().justify_between().text_size(11).text_color(t.dim)
+        .child(div().truncate().child(g.name))
+        .child(div().id(`tree-new-${mainTree.path}`).h(22).px(6).gap(4).flex().items_center().rounded(6).text_size(10.5)
           .cursor_pointer().hover((el) => el.bg(t.hover).text_color(t.foreground))
-          .on_click(() => openOverlay({ mod: "worktree", kind: "dialog", width: 460, height: 280, props: { folder: mainPath, machine: "", argv: ["claude"] } }))
-          .child(image("mods/flock/icons/ui-plus.svg").w(12).h(12).flex_none())));
-      g.trees.forEach((wt, n) => rows.push(h_flex().id(`tree-${wt.path}`).mx(8).px(8).h(28).gap(7).items_center().rounded(7)
+          .on_click(() => dialog("new"))
+          .child(svg("mods/flock/icons/ui-plus.svg").size(10).text_color(t.dim).flex_none()).child("New")));
+      shown.forEach((wt, n) => rows.push(h_flex().id(`tree-${wt.path}`).mx(8).px(8).h(28).gap(7).items_center().rounded(7)
         .cursor_pointer().hover((el) => el.bg(t.hover))
-        .on_click(() => (wt.space ? run("space.select", { id: wt.space }) : run("space.new", { folder: wt.path, machine: "" })))
-        .child(div().text_color(t.dim).text_size(11.5).child(n === g.trees.length - 1 ? "\u2514\u2500" : "\u251c\u2500"))
+        .on_click(() => (wt.space ? run("space.select", { id: wt.space }) : run("space.new", { folder: wt.path })))
         .child(image(`mods/flock/icons/tree-${wt.main ? 5 : wt.space ? 3 : 1}.svg`).w(16).h(16).flex_none())
         .child(div().flex_1().min_w(0).truncate().text_color(wt.space ? t.foreground : t.muted).child(wt.branch))
         .when(Boolean(this.prs[`${g.name} ${wt.branch}`]?.pr), (el) => {
@@ -801,14 +855,44 @@ export default class Spaces extends View {
             .child(`#${pr.number} ${mark}`.trim()));
         })
         .child(div().text_size(10.5).flex_none().text_color(wt.space ? t.accent : t.dim).child(wt.main ? "main" : wt.space ? "open" : "+ open"))));
+      rows.push(h_flex().id(`tree-all-${mainTree.path}`).mx(8).px(8).h(24).items_center().rounded(7).text_size(11).text_color(t.dim)
+        .cursor_pointer().hover((el) => el.bg(t.hover).text_color(t.foreground))
+        .on_click(() => dialog("open"))
+        .child(more > 0 ? `+ ${more} more \u00b7 open or delete\u2026` : "Open or delete\u2026"));
     }
-    return v_flex().flex_none().pt(10).pb(4).mx(-8)
-      .child(h_flex().h(31).pl(16).pr(10).items_center().text_size(11.5).text_color(t.dim).child("Worktrees"))
-      .children(rows);
+    return v_flex().flex_none().pb(4).mx(-8)
+      .child(this.sectionHeader(t, "worktrees", "Worktrees", total))
+      .children(folded ? [] : rows);
+  }
+
+  // The "..." popup next to Spaces: which sections to show.
+  settingsView(t) {
+    const rows = [
+      ["reviewer", "Reviewer", "Scout and the PR panel's space"],
+      ["servers", "Servers", "dev servers running in your spaces"],
+      ["worktrees", "Worktrees", "each repo's worktrees"],
+      ["update", "Version and update button", "bottom right of the window"],
+    ];
+    const box = (on) => div().size(16).flex_none().flex().items_center().justify_center().rounded(4).border(1)
+      .border_color(on ? t.accent : t.border).bg(on ? t.accent : t.background)
+      .when(on, (el) => el.child(svg("mods/workspace-chrome/check.svg").size(11).text_color(t.solid_foreground ?? t.background)));
+    return v_flex().size_full().p(14).gap(4).bg(t.popover).text_size(13)
+      .child(div().font_semibold().text_color(t.foreground).child("Show in the sidebar"))
+      .child(div().text_size(11.5).text_color(t.dim).pb(6).child("Herdr Ranch. Untick what you don't want."))
+      .children(rows.map(([key, label, note]) => {
+        const on = !hidden(key);
+        return h_flex().id(`show-${key}`).h(44).px(8).gap(10).items_center().rounded(8).cursor_pointer().hover((el) => el.bg(t.hover))
+          .on_click((_e, cx) => { setShared(HIDE_KEY, { ...(shared(HIDE_KEY) ?? {}), [key]: on }); cx.notify(); })
+          .child(box(on))
+          .child(v_flex().flex_1().min_w(0).child(div().text_color(t.foreground).child(label)).child(div().truncate().text_size(11).text_color(t.dim).child(note)));
+      }))
+      .child(div().flex_1())
+      .child(h_flex().justify_end().text_size(11).text_color(t.dim).child("esc close"));
   }
 
   render() {
     const t = theme();
+    if (props()?.ranchSettings) return this.settingsView(t);
     const collapsed = narrow();
     reviewerIds = reviewerSpaces(spaces(), panes(), terminals());
     const palette = ["ansi6", "ansi3", "ansi4", "ansi5", "ansi2", "ansi1"];
@@ -835,8 +919,12 @@ export default class Spaces extends View {
       .child(h_flex().h(31).pl(16).pr(10).items_center().justify_between().text_size(11.5).text_color(t.dim)
         .when(collapsed, el => el.pl(0).pr(0).justify_center())
         .when(!collapsed, el => el.child("Spaces"))
-        .child(div().id("space-new").size(26).flex_none().flex().items_center().justify_center().rounded(6).hover(s => s.bg(t.hover).text_color(t.foreground))
-          .on_click(() => run("space.new")).child(svg("mods/workspace-chrome/plus.svg").size(14))))
+        .child(h_flex().gap(2).items_center()
+          .when(!collapsed, el => el.child(div().id("ranch-settings").size(26).flex_none().flex().items_center().justify_center().rounded(6).hover(s => s.bg(t.hover))
+            .on_click(() => openOverlay({ mod: "meadows", kind: "popup", width: 280, height: 290, props: { ranchSettings: true } }))
+            .child(svg("mods/flock/icons/ui-dots.svg").size(12).text_color(t.dim).flex_none())))
+          .child(div().id("space-new").size(26).flex_none().flex().items_center().justify_center().rounded(6).hover(s => s.bg(t.hover).text_color(t.foreground))
+          .on_click(() => run("space.new")).child(svg("mods/workspace-chrome/plus.svg").size(14)))))
       .child(v_flex().flex_1().min_h(0).px(collapsed ? 0 : 8).pb(14).overflow_y_scrollbar().mode("always").track_scroll(this.scroll)
         // A block above (another mod's) growing, or the window resizing, shrinks this list and can push the active space out.
         .on_size_change((_size, cx) => { if (this.activeAt >= 0) { this.scroll.scroll_to_item(this.activeAt); cx.notify(); } })
@@ -844,7 +932,7 @@ export default class Spaces extends View {
         .children(list)
         // The Reviewer section follows the last space instead of sinking to the bottom of the block.
         .when(!collapsed && this.reviewers?.length > 0, (el) => el.child(this.reviewerSection(t)))
-        .when(!collapsed && this.servers.length + this.gone.length > 0, (el) => el.child(this.serversSection(t)))
-        .when(!collapsed, (el) => { const w = this.worktreesSection(t); return w ? el.child(w) : el; }));
+        .when(!collapsed && !hidden("servers") && this.servers.length + this.gone.length > 0, (el) => el.child(this.serversSection(t)))
+        .when(!collapsed && !hidden("worktrees"), (el) => { const w = this.worktreesSection(t); return w ? el.child(w) : el; }));
   }
 }

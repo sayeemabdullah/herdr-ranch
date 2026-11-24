@@ -18,6 +18,21 @@ export function parseListeners(out) {
   return found;
 }
 
+/** Linux: `ss -H -ltnp` -> the same [{ pid, command, port }] as parseListeners. */
+export function parseSs(out) {
+  const found = [], seen = new Set();
+  for (const line of String(out ?? "").split("\n")) {
+    const local = line.trim().split(/\s+/)[3] ?? "";
+    const port = Number(/:(\d+)$/.exec(local)?.[1]);
+    if (!port) continue;
+    for (const m of line.matchAll(/\("([^"]+)",pid=(\d+)/g)) {
+      const pid = Number(m[2]), key = `${pid}:${port}`;
+      if (!seen.has(key)) { seen.add(key); found.push({ pid, command: m[1], port }); }
+    }
+  }
+  return found;
+}
+
 /** `lsof -a -d cwd -Fpn -p ...` -> { pid: folder }. */
 export function parseCwds(out) {
   const cwds = {};
@@ -49,7 +64,7 @@ const inside = (cwd, path) => cwd === path || cwd.startsWith(path.replace(/\/+$/
 /**
  * The servers that belong to your work: each listener whose folder is inside a place
  * ({ id, name, path }: a space or a worktree). The deepest matching place wins. One row per
- * process (its lowest port), lowest port first.
+ * process: its lowest port, and all its ports in `ports`; lowest port first.
  */
 export function pickServers(listeners, cwds, places) {
   const byPid = new Map();
@@ -59,7 +74,8 @@ export function pickServers(listeners, cwds, places) {
     const place = (places ?? []).filter((p) => p.path && inside(cwd, p.path)).sort((a, b) => b.path.length - a.path.length)[0];
     if (!place) continue;
     const have = byPid.get(l.pid);
-    if (!have || l.port < have.port) byPid.set(l.pid, { pid: l.pid, command: l.command, port: l.port, place, cwd });
+    const ports = [...(have?.ports ?? []), l.port].sort((a, b) => a - b);
+    byPid.set(l.pid, { pid: l.pid, command: l.command, port: ports[0], ports, place, cwd });
   }
   return [...byPid.values()].sort((a, b) => a.port - b.port);
 }

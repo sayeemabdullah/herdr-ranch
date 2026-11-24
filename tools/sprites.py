@@ -875,22 +875,25 @@ def confetti_grids():
 # ---------------------------------------------------------------- output
 
 def ui_icon_grids():
-    """Small pixel buttons for the Servers and Worktrees sections: stop (x), new (+), run again (play), update (up arrow)."""
+    """Small pixel buttons for the Servers and Worktrees sections: stop (x), new (+), run again (play), update (up arrow), more (three dots)."""
     x = ["ww.....ww", ".ww...ww.", "..ww.ww..", "...www...", "....w....", "...www...", "..ww.ww..", ".ww...ww.", "ww.....ww"]
     plus = ["....ww....", "....ww....", "....ww....", "....ww....", "wwwwwwwwww", "wwwwwwwwww", "....ww....", "....ww....", "....ww....", "....ww...."]
     play = ["M....", "MM...", "MMM..", "MMMM.", "MMMMM", "MMMM.", "MMM..", "MM...", "M...."]
     play = ["..." + r + "." for r in play]
     up = ["....o....", "...ooo...", "..ooooo..", ".ooooooo.", "ooooooooo", "...ooo...", "...ooo...", "...ooo...", "...ooo..."]
-    return {"ui-x": x, "ui-plus": plus, "ui-play": play, "ui-up": up}
+    dots = ["........."] * 3 + ["ww.ww.ww.", "ww.ww.ww."] + ["........."] * 4
+    return {"ui-x": x, "ui-plus": plus, "ui-play": play, "ui-up": up, "ui-dots": dots}
 
 
-def render(g, display):
+def render(g, display, current=""):
+    """`current`: colour keys drawn as currentColor, so the button takes the theme's text colour."""
     n = len(g)
     rects = []
     for y, row in enumerate(g):
         for x, ch in enumerate(row):
             if ch != ".":
-                rects.append(f'<rect x="{x}" y="{y}" width="1" height="1" fill="{PALETTE[ch]}"/>')
+                fill = "currentColor" if ch in current else PALETTE[ch]
+                rects.append(f'<rect x="{x}" y="{y}" width="1" height="1" fill="{fill}"/>')
     return (f'<svg xmlns="http://www.w3.org/2000/svg" width="{display}" height="{display}" '
             f'viewBox="0 0 {n} {n}" shape-rendering="crispEdges">' + "".join(rects) + "</svg>\n")
 
@@ -917,8 +920,10 @@ def main():
         for name, grid in emblem_grids(phase).items():
             suffix = "" if phase == "day" else f"-{phase}"
             write(os.path.join(EMBLEMS, f"{name}{suffix}.svg"), render(grid, EMBLEM))
-    for name, grid in {**alarm_grids(), **bell_grids(), **tree_grids(), **ui_icon_grids()}.items():
+    for name, grid in {**alarm_grids(), **bell_grids(), **tree_grids()}.items():
         write(os.path.join(ICONS, f"{name}.svg"), render(grid, 14))
+    for name, grid in ui_icon_grids().items():
+        write(os.path.join(ICONS, f"{name}.svg"), render(grid, 14, current="" if name == "ui-play" else "wo"))
     for name, grid in confetti_grids().items():
         write(os.path.join(SPRITES, f"{name}.svg"), render(grid, DISPLAY))
 

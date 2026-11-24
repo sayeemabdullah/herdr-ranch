@@ -1,6 +1,6 @@
 import { View, div, svg, image } from "gpui-kit";
 import { h_flex } from "gpui-base";
-import { spaces, agents, theme, run, window, keys, setBadge, checking, exec, appHome, home, readTextFile, notify } from "herdr";
+import { spaces, agents, theme, run, window, keys, setBadge, checking, exec, appHome, home, readTextFile, notify, shared } from "herdr";
 import { RELEASE_API, isNewer, parseRelease, updateScript } from "./update.js";
 import { parseCpu, parseMemMac, parseMemLinux, parseDisk, formatGB } from "./vitals.js";
 
@@ -67,7 +67,7 @@ export default class WorkspaceStatus extends View {
   // Opens a tab that downloads the release and runs its installer, so you watch it happen.
   runUpdate() {
     if (!this.update) return;
-    run("tab.new", { name: "Update Ranch", folder: home(), argv: ["/bin/zsh", "-lc", updateScript(this.update.tag)] });
+    run("tab.new", { name: "Update Ranch", folder: home(), argv: ["/bin/sh", "-c", updateScript(this.update.tag)] });
   }
 
   // CPU, memory and disk of this computer. Cores and total memory are read once.
@@ -149,11 +149,11 @@ export default class WorkspaceStatus extends View {
           .child(`${count} ${words}`)))
       .when(list.length === 0, el => el.child("The ranch is quiet"))
       .child(div().flex_1())
-      .when(Boolean(this.update), el => el.child(h_flex().id("ranch-update").px(8).h(20).gap(5).items_center().flex_none().rounded(5)
+      .when(Boolean(this.update) && (shared("ranch.hide") ?? {}).update !== true, el => el.child(h_flex().id("ranch-update").px(8).h(20).gap(5).items_center().flex_none().rounded(5)
         .bg(t.solid ?? "#f2c744").text_color(t.solid_foreground ?? "#33062b").text_size(11.5).font_semibold()
         .cursor_pointer().hover(s => s.opacity(0.9)).on_click(() => this.runUpdate())
-        .child(image("mods/flock/icons/ui-up.svg").w(11).h(11).flex_none()).child(`Update to ${this.update.tag}`)))
-      .when(!this.update && Boolean(this.version), el => el.child(div().id("ranch-version").text_size(11).text_color(t.dim).cursor_pointer()
+        .child(svg("mods/flock/icons/ui-up.svg").size(11).text_color(t.solid_foreground ?? "#33062b").flex_none()).child(`Update to ${this.update.tag}`)))
+      .when(!this.update && Boolean(this.version) && (shared("ranch.hide") ?? {}).update !== true, el => el.child(div().id("ranch-version").text_size(11).text_color(t.dim).cursor_pointer()
         .hover(s => s.text_color(t.foreground)).on_click((_e, cx) => this.checkUpdate(cx, true)).child(`Ranch v${this.version}`)))
       .child(this.meter(t, "CPU", this.vitals.cpu, this.vitals.cpu == null ? "--" : `${this.vitals.cpu}%`))
       .child(this.meter(t, "RAM", this.vitals.mem && Math.round((100 * this.vitals.mem.used) / this.vitals.mem.total),

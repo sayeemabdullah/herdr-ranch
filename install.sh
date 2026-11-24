@@ -10,7 +10,7 @@ STAMP="$(date +%Y%m%d-%H%M%S)"
 # Outside mods/ and layouts/: a backed-up mod folder left in mods/ would load as a mod of its own.
 BACKUP="$HERDR_HOME/backups/herdr-ranch-$STAMP"
 LAYOUT="Herdr-Ranch"
-MODS=(flock flock-toast flock-status meadows ranch-chrome ranch-tabs ranch-pane)
+MODS=(flock flock-toast flock-status meadows ranch-chrome ranch-tabs ranch-pane ranch-worktree)
 THEMES=(ranch-meadow ranch-dusk)
 
 fail() { echo "install.sh: $*" >&2; exit 1; }

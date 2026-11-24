@@ -82,8 +82,14 @@ class Pen:
     def paste(self, im, x, y):
         self.img.paste(im, (round(x * self.s), round(y * self.s)), im)
 
-    def heading(self, x0, x1, y, label, right=None):
-        self.text(x0 + 7, y, label, 11, self.c["dim"])
+    def heading(self, x0, x1, y, label, right=None, folded=False, divider=False):
+        c, sc = self.c, self.s
+        if divider:
+            self.d.line((round((x0 + 16) * sc), round((y - 10) * sc), round((x1 - 16) * sc), round((y - 10) * sc)), fill=tuple(c["border"]) + (115,), width=max(1, round(sc)))
+        cx, cy = x0 + 17, y + 7
+        pts = [(cx - 3, cy - 2), (cx, cy + 2), (cx + 3, cy - 2)] if not folded else [(cx - 2, cy - 3), (cx + 2, cy), (cx - 2, cy + 3)]
+        self.d.line([(round(a * sc), round(b * sc)) for a, b in pts], fill=tuple(c["dim"]), width=max(1, round(1.4 * sc)))
+        self.text(x0 + 26, y, label, 11, self.c["dim"])
         if right is not None:
             w = self.d.textlength(right, font=font(11 * self.s)) / self.s
             self.text(x1 - 7 - w, y, right, 11, self.c["dim"])
@@ -105,20 +111,14 @@ class Pen:
 
     def worktrees(self, x0, x1, y, repo, rows):
         c = self.c
-        self.heading(x0, x1, y, "Worktrees")
-        self.text(x0 + 7, y + 24, repo, 10.5, c["dim"])
-        self.box(x1 - 28, y + 20, x1 - 6, y + 40, 6, fill=(255, 255, 255, 28))
-        self.paste(icon("ui-plus", 10 * self.s, self.light), x1 - 22, y + 25)
+        self.heading(x0, x1, y, "Worktrees", "4", divider=True)
+        self.text(x0 + 16, y + 26, repo, 10.5, c["dim"])
+        self.paste(icon("ui-plus", 9 * self.s, self.light), x1 - 50, y + 28)
+        self.text(x1 - 38, y + 26, "New", 10.5, c["dim"])
         yy = y + 44
         for i, (branch, kind, badge, tag) in enumerate(rows):
-            line = tuple(c["dim"]) + (170,)
-            last = i == len(rows) - 1
-            sc = self.s
-            vx = round((x0 + 18) * sc)
-            self.d.line((vx, round((yy - 2) * sc), vx, round((yy + (12 if last else 26)) * sc)), fill=line, width=max(1, round(sc)))
-            self.d.line((vx, round((yy + 12) * sc), round((x0 + 27) * sc), round((yy + 12) * sc)), fill=line, width=max(1, round(sc)))
-            self.paste(tree(kind, 16 * self.s), x0 + 30, yy + 4)
-            self.text(x0 + 52, yy + 5, branch, 11.5, c["fg"] if tag in ("main", "open") else c["muted"])
+            self.paste(tree(kind, 16 * self.s), x0 + 16, yy + 4)
+            self.text(x0 + 38, yy + 5, branch, 11.5, c["fg"] if tag in ("main", "open") else c["muted"])
             right = x1 - 8
             tw = self.d.textlength(tag, font=font(10 * self.s)) / self.s
             self.text(right - tw, yy + 7, tag, 10, c["accent"] if tag in ("main", "open") else c["dim"])
@@ -127,7 +127,8 @@ class Pen:
                 bw = self.d.textlength(text, font=font(10 * self.s)) / self.s
                 self.text(right - tw - 8 - bw, yy + 7, text, 10, c[colour])
             yy += 26
-        return yy
+        self.text(x0 + 16, yy + 5, "+ 24 more \u00b7 open or delete\u2026", 11, c["dim"])
+        return yy + 26
 
 
 def update_pill(pen, x1, y, text="Update to v0.3.0"):
@@ -138,6 +139,71 @@ def update_pill(pen, x1, y, text="Update to v0.3.0"):
     pen.box(x0, y, x1, y + 17, 5, fill=c["gold"])
     pen.paste(icon("ui-up", 10 * pen.s, pen.light), x0 + 7, y + 3)
     pen.text(x0 + 21, y + 2.5, text, 11, c["on_gold"], "Semibold")
+
+
+def settings_picture(path, theme="dark", s=2):
+    """The "Show in the sidebar" popup."""
+    w, h = 280, 252
+    pop = (92, 27, 80) if theme == "dark" else (222, 232, 200)
+    img = Image.new("RGB", (round(w * s), round(h * s)), pop)
+    pen = Pen(img, s, theme)
+    c = pen.c
+    pen.box(0.5, 0.5, w - 0.5, h - 0.5, 8, outline=c["border"])
+    pen.text(18, 14, "Show in the sidebar", 13, c["fg"], "Semibold")
+    pen.text(18, 34, "Herdr Ranch. Untick what you don't want.", 11.5, c["dim"])
+    rows = [("Reviewer", "Scout and the PR panel's space", True), ("Servers", "dev servers running in your spaces", True),
+            ("Worktrees", "each repo's worktrees", False), ("Version and update button", "bottom right of the window", True)]
+    y = 62
+    for label, note, on in rows:
+        pen.box(18, y + 12, 34, y + 28, 4, fill=c["gold"] if on else None, outline=c["gold"] if on else c["border"])
+        if on:
+            pen.d.line([(round(22 * s), round((y + 20) * s)), (round(25 * s), round((y + 23) * s)), (round(31 * s), round((y + 16) * s))], fill=c["on_gold"], width=max(1, round(1.8 * s)))
+        pen.text(46, y + 6, label, 13, c["fg"])
+        pen.text(46, y + 24, note, 11, c["dim"])
+        y += 44
+    pen.text(w - 52, h - 22, "esc close", 11, c["dim"])
+    img.save(path)
+
+
+def dialog_picture(path, theme="dark", s=2):
+    """The Open worktree dialog, with Delete on each row."""
+    w, h = 520, 420
+    pop = (92, 27, 80) if theme == "dark" else (222, 232, 200)
+    img = Image.new("RGB", (round(w * s), round(h * s)), pop)
+    pen = Pen(img, s, theme)
+    c = pen.c
+    pen.box(0.5, 0.5, w - 0.5, h - 0.5, 10, outline=c["border"])
+    pen.paste(tree(5, 24 * s), 18, 16)
+    pen.text(52, 15, "Open worktree of api-server", 15, c["fg"], "Semibold")
+    pen.text(52, 36, "Pick one to open it. Delete removes the folder; the branch stays.", 12, c["muted"])
+    pen.box(18, 66, w - 18, 100, 8, fill=(40, 6, 36) if theme == "dark" else (240, 244, 226), outline=c["gold"])
+    pen.text(30, 76, "filter worktrees", 13, c["dim"])
+    rows = [("main", 5, "main checkout", "~/dev/api-server", None), ("fix/login-timeout", 3, "open", "~/.herdr/worktrees/api-server/fix-login-timeout", "x"),
+            ("feat/rate-limit", 1, "2h", "~/.herdr/worktrees/api-server/feat-rate-limit", "ask"), ("chore/deps", 1, "4d", "~/.herdr/worktrees/api-server/chore-deps", "x"),
+            ("docs/readme", 1, "6d", "~/.herdr/worktrees/api-server/docs-readme", "x")]
+    y = 112
+    for i, (name, kind, tag, path_, act) in enumerate(rows):
+        if i == 0:
+            pen.box(14, y, w - 14, y + 48, 8, fill=(106, 37, 96) if theme == "dark" else (157, 184, 120))
+        pen.paste(tree(kind, 18 * s), 24, y + 15)
+        pen.text(52, y + 8, name, 13, c["fg"])
+        pen.text(52, y + 28, path_, 11.5, c["dim"])
+        tw = pen.d.textlength(tag, font=font(11 * s)) / s
+        right = w - 24
+        if act == "x":
+            pen.paste(icon("ui-x", 10 * s, pen.light), w - 36, y + 19)
+            right = w - 46
+        elif act == "ask":
+            ask = "Delete?"
+            aw = pen.d.textlength(ask, font=font(11.5 * s)) / s
+            pen.text(w - 24 - aw, y + 17, ask, 11.5, c["red"])
+            right = w - 24 - aw - 12
+        pen.text(right - tw, y + 9, tag, 11, c["accent"] if tag == "open" else c["dim"])
+        y += 52
+    pen.text(18, h - 40, "up/down choose \u00b7 enter open \u00b7 esc close", 11, c["dim"])
+    pen.box(w - 84, h - 48, w - 18, h - 16, 8, outline=c["border"])
+    pen.text(w - 66, h - 40, "Close", 13, c["muted"], "Semibold")
+    img.save(path)
 
 
 def patch_screenshot(path, theme):
@@ -179,6 +245,8 @@ def main():
     patch_screenshot(os.path.join(ROOT, "preview-light.png"), "light")
     os.makedirs(os.path.join(ROOT, "assets"), exist_ok=True)
     standalone(os.path.join(ROOT, "assets", "servers-worktrees.png"))
+    settings_picture(os.path.join(ROOT, "assets", "ranch-settings.png"))
+    dialog_picture(os.path.join(ROOT, "assets", "worktree-dialog.png"))
     # the status bar with the Update button, for the README
     bar = Image.open(os.path.join(ROOT, "layouts", "Herdr-Ranch.png")).convert("RGB")
     bar.crop((560, 972, 1600, 1006)).resize((2080, 68), Image.LANCZOS).save(os.path.join(ROOT, "assets", "update-button.png"))
