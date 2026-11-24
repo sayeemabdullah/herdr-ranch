@@ -49,10 +49,11 @@ jobs:
       - name: Art tests
         run: python3 -m unittest discover -s tools
 
-      - name: The checked-in pictures match the drawing code
+      # Only the SVGs: the banner PNGs depend on the Pillow version, so their bytes differ between machines.
+      - name: The checked-in SVGs match the drawing code
         run: |
           python3 tools/sprites.py
-          git diff --exit-code -- mods
+          git diff --exit-code -- '*.svg'
 
   ci-ok:
     name: ci-ok
