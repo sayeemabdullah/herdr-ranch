@@ -5,6 +5,7 @@ import { v_flex, h_flex, InputState, Input } from "gpui-base";
 import { agents, settings, terminals, panes, focused, spaces, run, theme, shared, setShared, setAgentOrder, openOverlay, closeOverlay, props, window, layout, hc, checking, notify, exec } from "herdr";
 import { parseContext, parseModel, parseQuota, parseCost } from "./agent-stats.js";
 import { watchAgent, parseShortstat, changeSince, formatChange } from "./watch.js";
+import { pickContext, buildHandoff } from "./handoff.js";
 import { castAgents } from "./casting.js";
 import { MINUTE, NAP_AFTER, ALARM_AFTER, TREE_AT, lifeOf, treeStage, worked, countsAsTask, needsRead, migrateCost } from "./ranch.js";
 
@@ -184,6 +185,7 @@ function castFor(list, all) {
 export default class Agents extends View {
   init(_props, cx) {
     if (props()?.rename) return this.initRename();
+    if (props()?.handoff) return this.initHandoff(cx);
     if (props()?.sortMenu || props()?.needsList) return;
     this.folded = new Set();
     // Each agent's last state and when it changed (ms), kept across restarts.
@@ -430,6 +432,87 @@ export default class Agents extends View {
     return RANK[a.status] ?? 0;
   }
 
+  // Handoff popup: read the source agent's screen, let the person pick who gets it and read exactly what
+  // will be sent. Nothing leaves until Send is pressed.
+  initHandoff(cx) {
+    this.screen = null;
+    this.target = null;
+    this.span = 40;
+    this.sent = null;
+    const p = props();
+    this.intro = "";
+    this.introInput = InputState.new({ value: "" });
+    this.introInput.on("change", (_e, cx2) => { this.intro = this.introInput.value(); cx2.notify(); });
+    cx.spawn(async (cx2) => {
+      const r = await hc(["read", p.handoff]).catch(() => null);
+      this.screen = r && r.code === 0 ? r.stdout : "";
+      cx2.notify();
+    });
+  }
+
+  handoffText() {
+    const p = props();
+    return buildHandoff({ from: p.from, intro: this.intro, context: pickContext(this.screen ?? "", this.span) });
+  }
+
+  sendHandoff(cx) {
+    if (!this.target || this.sent) return;
+    const p = props();
+    const text = this.handoffText();
+    this.sent = "sending";
+    cx.notify();
+    hc(["send", this.target, text]).then((r) => {
+      this.sent = r.code === 0 ? "sent" : "failed";
+      cx.notify();
+      if (r.code === 0) closeOverlay(p.overlay);
+      else console.warn(`flock: hc send ${this.target} failed: ${r.stderr.trim()}`);
+    }, () => { this.sent = "failed"; cx.notify(); });
+  }
+
+  handoffBox(t) {
+    const p = props();
+    const cast = shared(CAST_KEY) ?? {};
+    const names = shared(NAMES_KEY) ?? {};
+    const variants = shared(VARIANT_KEY) ?? {};
+    const others = agents().filter((a) => a.address !== p.handoff);
+    const text = this.screen == null ? "Reading the screen…" : this.handoffText();
+    const button = (id, label, primary, on, action) => h_flex().id(id).h(30).px(12).items_center().rounded(8)
+      .border(1).border_color(primary && on ? t.solid : t.input).bg(primary && on ? t.solid : t.raised)
+      .text_color(primary && on ? t.solid_foreground : t.foreground).text_size(12.5).font_medium()
+      .when(on, (el) => el.cursor_pointer().hover((s) => s.opacity(0.88)).on_click(action)).when(!on, (el) => el.opacity(0.5)).child(label);
+    const target = others.find((a) => a.address === this.target);
+    return v_flex().w_full().h_full().p(16).gap(8).bg(t.popover).text_color(t.foreground)
+      .child(h_flex().items_center().child(div().flex_1().text_size(14).font_semibold().child(`Hand off from ${p.from}`)).child(div().text_size(11).text_color(t.dim).child("Esc")))
+      .child(div().text_size(11).text_color(t.dim).child("Send to"))
+      .child(v_flex().id("handoff-targets").max_h(150).flex_none().overflow_y_scrollbar().gap(2)
+        .when(others.length === 0, (el) => el.child(div().text_size(12).text_color(t.dim).child("No other agent is running.")))
+        .children(others.map((a) => {
+          const hero = cast[a.address];
+          const on = a.address === this.target;
+          return h_flex().id(`ho-${a.address}`).h(34).px(8).gap(8).rounded(7).items_center().cursor_pointer()
+            .border(1).border_color(on ? t.accent : t.chrome).when(on, (el) => el.bg(t.selected)).hover((s) => s.bg(t.hover))
+            .on_click((_e, cx) => { this.target = a.address; cx.notify(); })
+            .when(Boolean(hero), (el) => el.child(image(`mods/flock/sprites/${variants[a.address] ? `${hero}-alt` : hero}.svg`).w(24).h(24).flex_none()))
+            .child(div().font_semibold().child(names[a.address] ?? a.program?.name ?? a.address))
+            .child(div().flex_1().truncate().text_size(11).text_color(t.dim).child(a.space_name ?? ""))
+            .child(div().flex_none().text_size(11).text_color(a.status === "working" ? t.working : t.dim).child(MOOD[a.status] ?? ""));
+        })))
+      .child(div().text_size(11).text_color(t.dim).child("Message"))
+      .child(Input.new(this.introInput).h(32).px(9).rounded(8).border(1).border_color(t.input).bg(t.background).text_size(12).text_color(t.foreground))
+      .child(h_flex().gap(6).items_center().child(div().text_size(11).text_color(t.dim).mr(4).child("Screen lines"))
+        .children([20, 40, 80].map((n) => div().id(`ho-span-${n}`).px(8).h(22).flex().items_center().rounded(5).text_size(11.5).cursor_pointer()
+          .border(1).border_color(this.span === n ? t.accent : t.input).text_color(this.span === n ? t.foreground : t.muted)
+          .on_click((_e, cx) => { this.span = n; cx.notify(); }).child(String(n)))))
+      .child(div().text_size(11).text_color(t.dim).child("This is exactly what will be sent. Read it first: it can contain anything that was on the screen."))
+      .child(div().id("handoff-preview").flex_1().min_h(0).overflow_y_scrollbar().p(8).rounded(8).bg(t.background).border(1).border_color(t.border)
+        .text_size(11).text_color(t.muted).child(text))
+      .when(target?.status === "working", (el) => el.child(div().text_size(11).text_color(t.done).child(`${names[target.address] ?? "That agent"} is working: this reaches it as its next message.`)))
+      .child(h_flex().gap(8).justify_end().items_center()
+        .when(this.sent === "failed", (el) => el.child(div().flex_1().text_size(11).text_color(t.blocked).child("Could not send. Is that agent still running?")))
+        .child(button("ho-cancel", "Cancel", false, true, () => closeOverlay(p.overlay)))
+        .child(button("ho-send", this.sent === "sending" ? "Sending…" : "Send", true, Boolean(this.target) && this.screen != null && !this.sent || this.sent === "failed", (_e, cx) => { this.sent = null; this.sendHandoff(cx); })));
+  }
+
   initRename() {
     this.text = props().value ?? "";
     this.input = InputState.new({ value: this.text });
@@ -627,6 +710,7 @@ export default class Agents extends View {
   render(cx) {
     const t = theme();
     if (props()?.rename) return this.renameBox(t);
+    if (props()?.handoff) return this.handoffBox(t);
     if (props()?.needsList) return this.needsList(t);
     if (props()?.sortMenu) return this.sortMenu(t);
     const collapsed = narrow();
@@ -816,6 +900,13 @@ export default class Agents extends View {
           .when(hasQuota, el => el.child(this.spBar(t, stat.quota))))
         .when(Boolean(machine), el => el.child(div().text_size(10).text_color(t.dim).child(machine)))
         .when(subs.length > 0, el => el.child(fold(a, subs)))
+        .when(this.hovered === a.address && Boolean(hero) && list.length > 1, el => el.child(div().id(`handoff-${a.address}`)
+          .flex_none().p(2).rounded(4).text_size(13).text_color(t.dim).cursor_pointer()
+          .hover((s) => s.bg(t.hover).text_color(t.foreground)).tooltip("Hand off: send this animal's recent screen to another agent")
+          .on_click((_e, cx) => {
+            cx.stop_propagation();
+            openOverlay({ mod: "flock", kind: "dialog", width: 480, height: 600, props: { handoff: a.address, from: names[a.address] ?? titleCase(hero) } });
+          }).child("↗")))
         .when(this.hovered === a.address, el => el.child(pin))
         .when(this.hovered !== a.address && Boolean(when), el => el.child(div().flex_none().text_size(11).text_color(t.dim).child(duration(now - when))))
         .when(dim, el => el.opacity(0.25))
