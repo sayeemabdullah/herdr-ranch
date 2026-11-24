@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **Barnyard critters for servers.** A pig, cat, frog or hedgehog for each running server (red badge when it ended), an orchard of trees for worktrees, and a fence line above each section.
 - **Servers section.** Dev servers running in your spaces and worktrees, as cards with the port, program, space and uptime. Click to open in the browser; the x asks "Stop?" and a second press ends the process.
 - **Server ended? Restart it.** A server that stops by itself toasts, and its card stays a minute with a Restart button.
 - **PR and CI on worktrees**, and a **+ worktree + agent** button on each repo.

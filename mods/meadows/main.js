@@ -58,6 +58,17 @@ const MARK = { ansi6: "#22a99a", ansi3: "#e3814f", ansi4: "#5b8def", ansi5: "#8b
 
 const REALMS = ["barn", "silo", "haystack", "pond", "windmill", "orchard", "fence"];
 const REALMS_KEY = "meadows.emblems";
+// Each running server is a barnyard critter, kept per port; a server that ended wears the red badge.
+const CRITTERS = ["pig", "cat", "frog", "hedgehog"];
+const CRITTERS_KEY = "meadows.critters";
+const fence = () => div().w_full().h(9).flex_none().overflow_hidden().child(image("mods/ranch-chrome/fence.svg").w(480).h(9).flex_none());
+function critterPicture(name, state) {
+  const sprite = (file) => image(`mods/flock/sprites/${file}.svg`).w(32).h(32).flex_none();
+  if (state !== "running") return sprite(`${name}-blocked`);
+  return div().relative().w(32).h(32).flex_none()
+    .child(sprite(name).loop("opacity", { from: 7, to: -6, period: 900, easing: "linear" }))
+    .child(sprite(`${name}-2`).absolute().top(0).left(0).loop("opacity", { from: -6, to: 7, period: 900, easing: "linear" }));
+}
 // A 20x20 emblem drawn 1:1 stays crisp.
 const EMBLEM_SIZE = 20;
 // The emblems follow your clock like Pixel HQ's windows: dawn, day, dusk, night (day has no suffix).
@@ -658,7 +669,8 @@ export default class Spaces extends View {
         .child(still.loop("opacity", { from: 7, to: -6, period, easing: "linear" }))
         .child(sprite(next).absolute().top(0).left(0).loop("opacity", { from: -6, to: 7, period, easing: "linear" }));
     };
-    return v_flex().flex_none().pt(10).pb(4).mx(-8)
+    return v_flex().flex_none().pt(6).pb(4).mx(-8)
+      .child(fence())
       .child(h_flex().h(31).pl(16).pr(10).items_center().text_size(11.5).text_color(t.dim).child("Reviewer"))
       .children(this.reviewers.map(({ w }) => h_flex().id(`reviewer-${w.id}`).mx(8).my(2).px(8).h(50).gap(10).items_center().rounded(8)
         .border(1).border_color(w.active ? t.input : t.border)
@@ -670,6 +682,22 @@ export default class Spaces extends View {
           .child(div().truncate().font_semibold().text_color(t.foreground).child("Scout"))
           .child(div().truncate().text_size(11).text_color(w.status === "blocked" ? t.blocked : t.dim).child(`${WORDS[w.status] ?? "Waiting for PRs"} · ${w.name}`)))
         .child(div().text_color(tone(t, w.status)).child(glyph(w.status)))));
+  }
+
+  // Which critter each listed port wears: the first one nobody else has, kept in shared state.
+  critters() {
+    const live = new Set([...this.servers, ...this.gone].map((x) => x.port));
+    const stored = shared(CRITTERS_KEY) ?? {};
+    const map = Object.fromEntries(Object.entries(stored).filter(([port]) => live.has(Number(port))));
+    let changed = Object.keys(map).length !== Object.keys(stored).length;
+    for (const port of [...live].sort((a, b) => a - b)) {
+      if (map[port]) continue;
+      const taken = new Set(Object.values(map));
+      map[port] = CRITTERS.find((c) => !taken.has(c)) ?? CRITTERS[taken.size % CRITTERS.length];
+      changed = true;
+    }
+    if (changed) setShared(CRITTERS_KEY, map);
+    return map;
   }
 
   // Run the stopped server's command again, in a tab you can see, in the folder it ran in.
@@ -709,14 +737,15 @@ export default class Spaces extends View {
   // A section like Reviewer: the servers running in your projects, nicely. Click one to open it in the browser;
   // the x asks "Stop?" and a second press ends the process.
   serversSection(t) {
-    const realms = realmsFor(spaces());
+    const critters = this.critters();
     const sp = spaces();
-    return v_flex().flex_none().pt(10).pb(4).mx(-8)
+    return v_flex().flex_none().pt(6).pb(4).mx(-8)
+      .child(fence())
       .child(h_flex().h(31).pl(16).pr(10).items_center().justify_between().text_size(11.5).text_color(t.dim)
         .child("Servers").child(div().text_color(t.dim).child(String(this.servers.length))))
       .children(this.gone.map((g) => h_flex().id(`gone-${g.pid}`).mx(8).my(2).px(8).h(46).gap(10).items_center().rounded(8)
         .border(1).border_color(t.blocked ?? t.border)
-        .child(svg("mods/workspace-chrome/server.svg").size(18).flex_none().text_color(t.blocked ?? t.dim))
+        .child(critterPicture(critters[g.port] ?? CRITTERS[0], "gone"))
         .child(v_flex().flex_1().min_w(0)
           .child(h_flex().gap(6).items_baseline().child(div().font_semibold().text_color(t.blocked ?? t.foreground).child(`:${g.port}`)).child(div().truncate().text_color(t.muted).child("stopped")))
           .child(div().truncate().text_size(11).text_color(t.dim).child(g.cmd)))
@@ -724,16 +753,12 @@ export default class Spaces extends View {
           .cursor_pointer().hover((el) => el.bg(t.raised ?? t.hover))
           .on_click((_e, cx) => this.restart(g, cx)).child("\u21bb Restart"))))
       .children(this.servers.map((sv) => {
-        const w = sp.find((x) => x.id === sv.place.id);
-        const realm = w ? realms[w.id] : null;
         const asking = this.stopping?.pid === sv.pid && Date.now() < this.stopping.until;
-        return h_flex().id(`server-${sv.pid}`).mx(8).my(2).px(8).h(46).gap(10).items_center().rounded(8)
+        return h_flex().id(`server-${sv.pid}`).mx(8).my(2).px(8).h(50).gap(10).items_center().rounded(8)
           .border(1).border_color(t.border)
           .cursor_pointer().hover((el) => el.bg(t.hover))
           .on_click((_e, cx) => cx.open_url(`http://localhost:${sv.port}`))
-          .child(realm
-            ? emblemPicture(`mods/meadows/emblems/${realm}${phaseSuffix()}.svg`, false, t)
-            : svg("mods/workspace-chrome/server.svg").size(18).flex_none().text_color(t.dim))
+          .child(critterPicture(critters[sv.port] ?? CRITTERS[0], "running"))
           .child(v_flex().flex_1().min_w(0)
             .child(h_flex().gap(6).items_baseline()
               .child(div().font_semibold().text_color(t.working ?? t.foreground).child(`:${sv.port}`))
@@ -766,7 +791,7 @@ export default class Spaces extends View {
         .cursor_pointer().hover((el) => el.bg(t.hover))
         .on_click(() => (wt.space ? run("space.select", { id: wt.space }) : run("space.new", { folder: wt.path, machine: "" })))
         .child(div().text_color(t.dim).text_size(11.5).child(n === g.trees.length - 1 ? "\u2514\u2500" : "\u251c\u2500"))
-        .child(svg("mods/workspace-chrome/branch.svg").size(13).flex_none().text_color(wt.space ? t.accent : t.dim))
+        .child(svg(`mods/flock/icons/tree-${wt.main ? 5 : wt.space ? 3 : 1}.svg`).size(14).flex_none())
         .child(div().flex_1().min_w(0).truncate().text_color(wt.space ? t.foreground : t.muted).child(wt.branch))
         .when(Boolean(this.prs[`${g.name} ${wt.branch}`]?.pr), (el) => {
           const pr = this.prs[`${g.name} ${wt.branch}`].pr;
@@ -780,7 +805,8 @@ export default class Spaces extends View {
         })
         .child(div().text_size(10.5).flex_none().text_color(wt.space ? t.accent : t.dim).child(wt.main ? "main" : wt.space ? "open" : "+ open"))));
     }
-    return v_flex().flex_none().pt(10).pb(4).mx(-8)
+    return v_flex().flex_none().pt(6).pb(4).mx(-8)
+      .child(fence())
       .child(h_flex().h(31).pl(16).pr(10).items_center().text_size(11.5).text_color(t.dim).child("Worktrees"))
       .children(rows);
   }

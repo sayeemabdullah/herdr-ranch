@@ -491,6 +491,82 @@ def sheepdog(c, ph):
             c.dot(x, 11, "W")
 
 
+# ---------------------------------------------------------------- barnyard critters (one per running server)
+
+def pig(c, ph):
+    feet(c, ph, "p", "p")
+    c.ell(12, 18.2, 6.0, 3.8, "P")
+    c.ell(12, 10, 7.0, 6.0, "P")
+    c.poly([(6.5, 6), (9.5, 4), (10, 8)], "p")
+    c.poly([(17.5, 6), (14.5, 4), (14, 8)], "p")
+    c.shade("P", "p")
+    c.light("P", "L")
+    c.ell(12, 13, 3.6, 2.4, "p")
+    c.dot(10.6, 13, "e")
+    c.dot(13.4, 13, "e")
+    eyes(c, 9, 3.6)
+    c.dot(6.6, 11.5, "F")
+    c.dot(17.4, 11.5, "F")
+
+
+def cat(c, ph):
+    feet(c, ph, "O", "Q")
+    c.ell(12, 18.2, 5.8, 3.8, "O")
+    c.ell(12, 10, 6.8, 5.8, "O")
+    c.poly([(6.2, 7), (7.6, 2.4), (10.8, 5.4)], "O")
+    c.poly([(17.8, 7), (16.4, 2.4), (13.2, 5.4)], "O")
+    c.poly([(7.4, 6), (8, 4), (9.4, 5.6)], "P")
+    c.poly([(16.6, 6), (16, 4), (14.6, 5.6)], "P")
+    c.shade("O", "Q")
+    c.light("O", "L")
+    c.rect(11, 5, 12, 6, "Q")
+    c.rect(8, 6, 8, 7, "Q")
+    c.rect(15, 6, 15, 7, "Q")
+    c.ell(12, 13.2, 3.2, 2.2, "l")
+    c.dot(11.4, 12.4, "p")
+    c.dot(12.6, 12.4, "p")
+    eyes(c, 9, 3.4)
+    c.dot(5.6, 13, "W")
+    c.dot(18.4, 13, "W")
+
+
+def frog(c, ph):
+    feet(c, ph, "m", "m", dx=4.4)
+    c.ell(12, 18.2, 6.2, 3.8, "M")
+    c.ell(12, 12, 7.4, 5.4, "M")
+    c.ell(9.4, 6.6, 2.7, 2.8, "M")
+    c.ell(14.6, 6.6, 2.7, 2.8, "M")
+    c.shade("M", "m")
+    c.light("M", "I")
+    c.ell(12, 18, 3.8, 2.4, "l")
+    c.rect(9, 14, 15, 14, "m")
+    c.dot(9.4, 6.4, "W")
+    c.dot(14.6, 6.4, "W")
+    c.eye(9.4, 7)
+    c.eye(14.6, 7)
+    c.dot(10, 12, "m")
+    c.dot(14, 12, "m")
+
+
+def hedgehog(c, ph):
+    feet(c, ph, "c", "c")
+    c.ell(12, 14.4, 7.6, 7.0, "b")
+    c.poly([(5.6, 11), (7.6, 5.4), (9, 9)], "b")
+    c.poly([(8, 8), (10, 2.4), (12, 7)], "b")
+    c.poly([(12, 7), (14, 2.4), (16, 8)], "b")
+    c.poly([(15, 9), (17, 5), (19, 11)], "b")
+    c.shade("b", "n")
+    c.light("b", "B")
+    c.ell(12, 15, 5.2, 4.6, "C")
+    c.ell(12, 16.6, 2.8, 2.2, "c")
+    c.dot(12, 15.4, "e")
+    eyes(c, 13, 2.6)
+    c.dot(12, 6, "B")
+
+
+CRITTERS = {"pig": pig, "cat": cat, "frog": frog, "hedgehog": hedgehog}
+
+
 ANIMALS = {
     "sheep": sheep, "goat": goat, "rabbit": rabbit, "chicken": chicken, "cow": cow, "horse": horse,
     "duck": duck, "llama": llama, "fox": fox, "owl": owl, "dragon": dragon, "sheepdog": sheepdog,
@@ -502,7 +578,7 @@ def draw(name, ph=0, bob=False, lie=False, closed=False, lift=0):
     c.lie = lie
     c.closed = closed
     c.dy = (2 - lift) if lie else (1 if bob else 0)
-    ANIMALS[name](c, ph)
+    {**ANIMALS, **CRITTERS}[name](c, ph)
     return c.finish()
 
 
@@ -824,6 +900,9 @@ def main():
             for suffix, grid in poses.items():
                 write(os.path.join(SPRITES, f"{name}-alt{suffix}.svg"),
                       render(swap_colours(grid, ALT_SWAPS[name]), DISPLAY))
+    for name in CRITTERS:
+        for suffix, grid in pose_grids(name).items():
+            write(os.path.join(SPRITES, f"{name}{suffix}.svg"), render(grid, DISPLAY))
     for phase in PHASES:
         for name, grid in emblem_grids(phase).items():
             suffix = "" if phase == "day" else f"-{phase}"
