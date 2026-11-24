@@ -6,6 +6,7 @@
 - **A calmer sidebar.** Reviewer, Servers and Worktrees each have a heading with a chevron to fold them (Worktrees starts folded), thin lines between them, slimmer server cards, and Worktrees shows only the main checkout, the open ones and three more, with "+ N more" for the rest.
 - **Hide what you don't use.** The ··· button next to Spaces opens "Show in the sidebar": tick Reviewer, Servers, Worktrees and the version and update button on or off.
 - **Servers on Linux.** The list now works with `ss` and `/proc` where `lsof` is missing; a process with several ports shows `+N`; the port no longer gets squeezed out by a long program name. Restart and Update run in `/bin/sh`, so they no longer need zsh.
+- **README pictures.** A Servers and worktrees section with the new pictures: the sections, the toasts, the Open worktree list, the sidebar settings and the Update tab.
 - **Buttons follow the theme.** The pixel x, +, ··· and arrow use the theme's text colour, so they show on the light theme too.
 
 ## 0.2.0

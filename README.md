@@ -11,7 +11,7 @@
 
 <p><a href="https://github.com/sayeemabdullah/herdr-ranch/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/sayeemabdullah/herdr-ranch/ci.yml?branch=master&style=flat-square&label=CI"></a> <a href="https://herdr.dev"><img alt="herdr layout, herdr-app 0.1.16" src="https://img.shields.io/badge/herdr%20layout-0.1.16-222?style=flat-square"></a> <a href="https://nodejs.org"><img alt="Node 22 or newer, for the tests" src="https://img.shields.io/badge/node-%E2%89%A5%2022-339933?style=flat-square&logo=node.js&logoColor=white"></a> <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-0969da?style=flat-square"></a></p>
 
-[Install](#install) · [Update](#update) · [What you get](#what-you-get) · [Memory share](#memory-share) · [The cast](#the-cast) · [What it runs](#what-it-runs) · [Develop](#develop) · [Contributing](CONTRIBUTING.md)
+[Install](#install) · [Update](#update) · [What you get](#what-you-get) · [Servers and worktrees](#servers-and-worktrees) · [Memory share](#memory-share) · [The cast](#the-cast) · [What it runs](#what-it-runs) · [Develop](#develop) · [Contributing](CONTRIBUTING.md)
 
 <br>
 
@@ -75,20 +75,29 @@ Looking at an animal (focusing its pane) resets it to "Resting". Sub-agents show
 
 - **Spaces** with arch-badge emblems (barn, silo, haystack, pond, windmill, orchard, fence). The sky follows your clock: dawn, day, dusk, night with a moon and stars. A star twinkles while an agent in that space is working.
 - **Reviewer.** A space where [PR Reviewer](https://github.com/sayeemabdullah/herdr-PR-reviewer)'s PR Panel (or its watcher) is running moves out of the list into a section of its own under Spaces. The space's name doesn't matter, and a space that only has "PR Reviewer" in its name (say, where you write the plugin) stays a normal space: Scout the sheepdog, what it is doing (Reviewing, Needs you, Review done, Waiting for PRs), one click to the space. Claude reviews the pull requests you're asked to review there.
-- **Servers.** Every dev server running in one of your spaces or worktrees (found with `lsof` on macOS and `ss` on Linux, local only) is a card under the spaces, with its own barnyard critter (a pig, cat, frog or hedgehog, one each, kept per port) that bobs while it runs: its port, its program, the space it belongs to and how long it has been up. Click a card to open `http://localhost:<port>` in your browser. The x asks "Stop?" and a second press within 4 seconds ends the process. If a server ends by itself you get a toast and its card stays for a minute with a Restart button, which runs the same command again in a new tab so you can see it. Nothing outside your projects is listed.
-- **Port clash.** When an agent's screen says a port is already in use (`EADDRINUSE` and the like), you get a toast naming the program and process that holds it.
-- **Worktrees.** A repo with more than one worktree gets a list with the ranch's pixel trees: a full tree for the main checkout, a young tree where a space is open on a branch, and a sapling ("+ open") where none is. It shows the main checkout, every open worktree and up to three more; "+ N more" opens the full list (28 checkouts is fine), where each row has a pixel x to delete it: press it, then press "Delete?" within 5 seconds. Deleting removes the folder and closes its space; the branch stays, and one with uncommitted changes says "Delete and lose changes?" first. **New** on a repo's heading asks for a branch name and makes a worktree with an agent in it. Click one to jump to its space, or to make a space in that folder. A branch with a pull request shows `#42` and its CI (✓ passing, ✕ failing, … running, merged, closed, draft; needs the `gh` command and a GitHub repo); click it to open the PR. The **+** on a repo's heading makes a worktree and starts Claude in it.
-
-<p align="center"><img src="assets/servers-worktrees.png" alt="The Servers and Worktrees sections: a running server with a pink pig and its port in gold, a stopped one with a frog, a red badge, the port in red and a Restart button, then a repo's worktrees as pixel trees with their pull request and CI status" width="300"><br><sub>Servers (one running, one stopped) and a repo's worktrees. Names and numbers are made up.</sub></p>
 
 - **Quiet when you want it.** Each section's heading (Reviewer, Servers, Worktrees) has a chevron: click it to fold the section, and herdr remembers. Worktrees starts folded. The **···** button next to Spaces opens "Show in the sidebar", where you untick Reviewer, Servers, Worktrees or the version and update button to hide them for good. Hiding Reviewer puts Scout's space back in the Spaces list.
 
-<p align="center"><img src="assets/ranch-settings.png" alt="The Show in the sidebar popup: four ticked or unticked boxes for Reviewer, Servers, Worktrees, and the version and update button" width="280"> <img src="assets/worktree-dialog.png" alt="The Open worktree dialog: a pixel tree and title, a filter box, rows with a tree, the branch, its folder and a pixel x to delete, one row asking Delete?" width="460"><br><sub>The sidebar settings and the Open worktree list. Names are made up.</sub></p>
+<p align="center"><img src="assets/ranch-settings.png" alt="The Show in the sidebar popup: four ticked or unticked boxes for Reviewer, Servers, Worktrees, and the version and update button" width="280"><br><sub>The sidebar settings. Drawn from the real colours; the names are made up.</sub></p>
 
 - **Ranch board.** Tasks done today, work time and spend, an apple tree that grows with your day (stages at 1, 4, 8, 13, 19 and 26 tasks, blossoms at 30, droops while someone has waited on you for over 5 minutes), and a gauge for the lowest 5-hour quota left.
 - **Agent cards.** The animal, its name (click to rename), its state, the model and cost, the space, the tab title, an **HP** bar (context used, green then yellow then red) and an **SP** bar (5-hour quota left), and after a task what it changed.
 - **Needs-you bell.** Rings with a red count in the Agents header. Click it for every waiting animal across all spaces, longest wait first; click a row to jump to that agent.
 - **Find.** The magnifier filters animals by name, animal, space, program or state; Enter jumps to the first match.
+
+### Servers and worktrees
+
+<p align="center"><img src="assets/servers-worktrees.png" alt="The Servers and Worktrees sections: a running server with a pink pig and its port in gold, a stopped one with a frog, a red badge, the port in red and a Restart button, then a repo's worktrees as pixel trees with their pull request and CI status" width="300"><br><sub>Servers (one running, one stopped) and a repo's worktrees. Names and numbers are made up.</sub></p>
+
+- **Servers.** Every dev server running in one of your spaces or worktrees (found with `lsof` on macOS and `ss` on Linux, local only) is a card under the spaces, with its own barnyard critter (a pig, cat, frog or hedgehog, one each, kept per port) that bobs while it runs: its port, its program, the space it belongs to and how long it has been up. Click a card to open `http://localhost:<port>` in your browser. The x asks "Stop?" and a second press within 4 seconds ends the process. If a server ends by itself you get a toast and its card stays for a minute with a Restart button, which runs the same command again in a new tab so you can see it. Nothing outside your projects is listed.
+- **Which servers show.** Only ones running inside one of your spaces' folders or a worktree, so system services never appear. Servers in a container, behind a remote machine or started from a folder outside your spaces are not listed.
+- **Port clash.** When an agent's screen says a port is already in use (`EADDRINUSE` and the like), you get a toast naming the program and process that holds it.
+
+<p align="center"><img src="assets/toasts.png" alt="Two toasts: Cocoa says port 3000 is already in use and names the process holding it; api-server :3000 stopped, with a hint to restart it from the Servers list" width="400"><br><sub>The port clash toast and the server-stopped toast.</sub></p>
+
+- **Worktrees.** A repo with more than one worktree gets a list with the ranch's pixel trees: a full tree for the main checkout, a young tree where a space is open on a branch, and a sapling ("+ open") where none is. It shows the main checkout, every open worktree and up to three more; "+ N more" opens the full list (28 checkouts is fine), where each row has a pixel x to delete it: press it, then press "Delete?" within 5 seconds. Deleting removes the folder and closes its space; the branch stays, and one with uncommitted changes says "Delete and lose changes?" first. **New** on a repo's heading asks for a branch name and makes a worktree with an agent in it. Click one to jump to its space, or to make a space in that folder. A branch with a pull request shows `#42` and its CI (✓ passing, ✕ failing, … running, merged, closed, draft; needs the `gh` command and a GitHub repo); click it to open the PR. The **+** on a repo's heading makes a worktree and starts Claude in it.
+
+<p align="center"><img src="assets/worktree-dialog.png" alt="The Open worktree dialog: a pixel tree and title, a filter box, rows with a tree, the branch, its folder and a pixel x to delete, one row asking Delete?" width="460"><br><sub>The Open worktree list, with Delete on each row.</sub></p>
 
 ### Developer helpers
 
@@ -256,7 +265,7 @@ python3 -m unittest discover -s tools
 | `mods/ranch-chrome`, `ranch-tabs`, `ranch-pane` | sign and footer, tab bar with the ranch strip, pane header |
 | `mods/ranch-worktree` | the New and Open worktree dialog, in the ranch style, with Delete (a copy of herdr's `worktree`) |
 | `tools/` | the pictures, the sounds and the demo GIF, with their tests |
-| `assets/` | `demo.gif`, `memory-share.png`, `servers-worktrees.png`, `ranch-settings.png`, `worktree-dialog.png`, `update-button.png`, `preview-dusk.png` |
+| `assets/` | `demo.gif`, `memory-share.png`, `servers-worktrees.png`, `ranch-settings.png`, `worktree-dialog.png`, `toasts.png`, `update-tab.png`, `update-button.png`, `preview-dusk.png` |
 | `VERSION` | the release number the Update button compares with |
 
 [RECIPE.md](RECIPE.md) is the full brief the layout can be rebuilt from (the format herdr.dev's gallery uses). See [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request: changes go through PRs with Conventional Commit titles, never straight to `master`.

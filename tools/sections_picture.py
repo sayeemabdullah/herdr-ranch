@@ -206,6 +206,50 @@ def dialog_picture(path, theme="dark", s=2):
     img.save(path)
 
 
+def toasts_picture(path, theme="dark", s=2):
+    """The two new toasts: a port already in use, and a server that stopped."""
+    w, h = 400, 160
+    bg = (63, 15, 56) if theme == "dark" else (188, 201, 157)
+    pop = (92, 27, 80) if theme == "dark" else (222, 232, 200)
+    img = Image.new("RGB", (round(w * s), round(h * s)), bg)
+    pen = Pen(img, s, theme)
+    c = pen.c
+
+    def toast(y, title, body, animal=None):
+        pen.box(10, y, w - 10, y + 64, 10, fill=pop, outline=c["border"])
+        x = 22
+        if animal:
+            pen.paste(critter(animal, "-blocked", 36 * s), 20, y + 14)
+            x = 64
+        pen.text(x, y + 10, title, 12.5, c["fg"], "Semibold")
+        pen.text(x, y + 30, body[0], 11, c["muted"])
+        if len(body) > 1:
+            pen.text(x, y + 44, body[1], 11, c["muted"])
+
+    toast(10, "Cocoa: port 3000 is already in use", ["node (process 4242) is listening on it. Stop it from", "the Servers list, or pick another port."], "cow")
+    toast(86, "api-server :3000 stopped", ["node ended. Restart it from the Servers list."])
+    img.save(path)
+
+
+def update_tab_picture(path, s=2):
+    """The tab the Update button opens, a few lines in."""
+    w, h = 560, 214
+    img = Image.new("RGB", (round(w * s), round(h * s)), (42, 6, 38))
+    pen = Pen(img, s, "dark")
+    c = pen.c
+    pen.box(14, 12, 136, 36, 6, fill=(69, 9, 58), outline=c["gold"], width=1.5)
+    pen.text(26, 17, "Update Ranch", 12, c["gold"], "Semibold")
+    mono = ImageFont.truetype("/System/Library/Fonts/Menlo.ttc", round(11.5 * s))
+    lines = [("Downloading Herdr Ranch v0.3.0...", c["fg"]), ("Installing into /Users/you/.config/herdr-app", c["fg"]),
+             ("  moved the old mods/flock to backups/herdr-ranch-20270102-0930/", c["dim"]),
+             ("check passed: mods/flock", c["green"]), ("check passed: mods/meadows", c["green"]), ("check passed: mods/ranch-worktree", c["green"]),
+             ("Done. ctrl-shift-l switches layouts.", c["fg"]), ("", c["fg"]),
+             ("Herdr Ranch is now v0.3.0. Press enter to close.", c["gold"])]
+    for i, (text, colour) in enumerate(lines):
+        pen.d.text((16 * s, (50 + i * 17) * s), text, font=mono, fill=tuple(colour))
+    img.save(path)
+
+
 def patch_screenshot(path, theme):
     img = Image.open(path).convert("RGB")
     s = img.size[0] / 1600
@@ -247,6 +291,8 @@ def main():
     standalone(os.path.join(ROOT, "assets", "servers-worktrees.png"))
     settings_picture(os.path.join(ROOT, "assets", "ranch-settings.png"))
     dialog_picture(os.path.join(ROOT, "assets", "worktree-dialog.png"))
+    toasts_picture(os.path.join(ROOT, "assets", "toasts.png"))
+    update_tab_picture(os.path.join(ROOT, "assets", "update-tab.png"))
     # the status bar with the Update button, for the README
     bar = Image.open(os.path.join(ROOT, "layouts", "Herdr-Ranch.png")).convert("RGB")
     bar.crop((560, 972, 1600, 1006)).resize((2080, 68), Image.LANCZOS).save(os.path.join(ROOT, "assets", "update-button.png"))
