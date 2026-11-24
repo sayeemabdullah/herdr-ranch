@@ -15,7 +15,7 @@
 
 <br>
 
-<img src="preview.png" alt="Herdr Ranch: spaces with arch-badge emblems, the Reviewer section with Scout, the ranch board and agent cards, a gold-boxed tab bar and a plain terminal" width="900">
+<img src="preview.png" alt="Herdr Ranch: every coding agent is a tiny pixel animal. The window with spaces, the Reviewer section with Scout and the ranch board, and the twelve animals on a fence" width="900">
 
 <br>
 
@@ -132,7 +132,7 @@ Both follow your system's light or dark mode, and the animals stay readable on e
 
 <table>
 <tr>
-<td align="center" width="50%"><img src="preview.png" alt="Ranch Dusk, the dark plum theme" width="440"><br><b>Ranch Dusk</b><br><sub>plum, gold accents</sub></td>
+<td align="center" width="50%"><img src="assets/preview-dusk.png" alt="Ranch Dusk, the dark plum theme" width="440"><br><b>Ranch Dusk</b><br><sub>plum, gold accents</sub></td>
 <td align="center" width="50%"><img src="preview-light.png" alt="Ranch Meadow, the light sage theme" width="440"><br><b>Ranch Meadow</b><br><sub>light sage, green accents</sub></td>
 </tr>
 </table>
