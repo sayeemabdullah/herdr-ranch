@@ -24,3 +24,23 @@ test("work time reads as minutes then hours", () => {
   assert.equal(worked(42 * MINUTE), "42m");
   assert.equal(worked(125 * MINUTE), "2h 5m");
 });
+
+import { countsAsTask, needsRead, MIN_TASK } from "../mods/flock/ranch.js";
+
+test("a task shorter than 20 seconds does not count", () => {
+  assert.equal(MIN_TASK, 20000);
+  assert.equal(countsAsTask(5000), false);
+  assert.equal(countsAsTask(19999), false);
+  assert.equal(countsAsTask(20000), true);
+});
+
+test("only working, focused, newly changed or stale agents are read", () => {
+  const now = 1_000_000;
+  const base = { status: "idle", focused: false };
+  assert.equal(needsRead({ ...base, status: "working" }, now, now - 1000, false), true);
+  assert.equal(needsRead({ ...base, focused: true }, now, now - 1000, false), true);
+  assert.equal(needsRead(base, now, now - 1000, true), true);
+  assert.equal(needsRead(base, now, undefined, false), true);
+  assert.equal(needsRead(base, now, now - 60 * 1000, false), false);
+  assert.equal(needsRead(base, now, now - 121 * 1000, false), true);
+});

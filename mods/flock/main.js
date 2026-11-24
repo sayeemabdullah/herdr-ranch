@@ -6,7 +6,7 @@ import { agents, settings, terminals, panes, focused, spaces, run, theme, shared
 import { parseContext, parseModel, parseQuota, parseCost } from "./agent-stats.js";
 import { watchAgent, parseShortstat, changeSince, formatChange } from "./watch.js";
 import { castAgents } from "./casting.js";
-import { MINUTE, NAP_AFTER, ALARM_AFTER, TREE_AT, lifeOf, treeStage, worked } from "./ranch.js";
+import { MINUTE, NAP_AFTER, ALARM_AFTER, TREE_AT, lifeOf, treeStage, worked, countsAsTask, needsRead } from "./ranch.js";
 
 function find(node, id) {
   if (node?.id === id) return node;
@@ -194,11 +194,13 @@ export default class Agents extends View {
     this.migratingPins = new Set();
     // Today's tally for the ranch board, kept across restarts and reset each day.
     try { this.ranch = JSON.parse(localStorage.getItem("ranch") ?? "null"); } catch { this.ranch = null; }
-    if (!this.ranch || this.ranch.day !== dayKey()) this.ranch = { day: dayKey(), shipped: 0, worked: 0, bySpace: {}, cost: {} };
+    if (!this.ranch || this.ranch.day !== dayKey()) this.ranch = { day: dayKey(), shipped: 0, worked: 0, bySpace: {}, cost: {}, costBase: {} };
     // Done animals tucked away with the tick, until their next task.
     try { this.settled = new Set(JSON.parse(localStorage.getItem("settled") ?? "[]")); } catch { this.settled = new Set(); }
     // Warnings per agent, and each agent's uncommitted change at the start of a task and now.
     this.watchState = {};
+    this.lastRead = {};
+    this.lastStatus = {};
     this.diff = {};
     this.summary = {};
     this.lastQuotaToast = 0;
@@ -221,9 +223,14 @@ export default class Agents extends View {
 
   readStats(cx) {
     cx.spawn(async (cx) => {
-      const list = agents();
-      const reads = await Promise.allSettled(list.map((a) => hc(["read", a.address])));
+      const everyone = agents();
+      // Only agents that are working, focused, just changed or stale are read; the rest keep their numbers.
+      const now = Date.now();
+      const list = everyone.filter((a) => needsRead(a, now, this.lastRead[a.address], this.lastStatus[a.address] !== a.status));
       const next = {};
+      for (const a of everyone) if (!list.includes(a) && this.stats[a.address]) next[a.address] = this.stats[a.address];
+      const reads = await Promise.allSettled(list.map((a) => hc(["read", a.address])));
+      for (const a of list) { this.lastRead[a.address] = now; this.lastStatus[a.address] = a.status; }
       reads.forEach((r, i) => {
         const address = list[i].address;
         const before = this.stats[address];
@@ -278,9 +285,15 @@ export default class Agents extends View {
       .child(div().w(48).flex_none().text_size(10).text_color(t.dim).child(text));
   }
 
+  // Start counting spend from now: what each session has cost so far becomes its zero.
+  resetSpend() {
+    this.ranch.costBase = { ...this.ranch.cost };
+    localStorage.setItem("ranch", JSON.stringify(this.ranch));
+  }
+
   // A finished task: one more on the board's tree, and the time it took.
   tally(a, took) {
-    if (this.ranch.day !== dayKey()) this.ranch = { day: dayKey(), shipped: 0, worked: 0, bySpace: {}, cost: {} };
+    if (this.ranch.day !== dayKey()) this.ranch = { day: dayKey(), shipped: 0, worked: 0, bySpace: {}, cost: {}, costBase: {} };
     this.ranch.shipped += 1;
     this.ranch.worked += Math.max(0, took);
     const room = a.space_name || "?";
@@ -374,7 +387,7 @@ export default class Agents extends View {
       if (this.changed[a.address]?.s === s) continue;
       const before = this.changed[a.address];
       if (s === "working") this.startTask(a);
-      if (before?.s === "working" && s === "idle") { this.tally(a, now - before.at); this.finishTask(a); }
+      if (before?.s === "working" && s === "idle" && countsAsTask(now - before.at)) { this.tally(a, now - before.at); this.finishTask(a); }
       this.changed[a.address] = { s, at: now };
       dirty = true;
     }
@@ -488,7 +501,7 @@ export default class Agents extends View {
     const lit = left == null ? 0 : Math.ceil(left / 20);
     const color = left == null ? t.dim : left <= 10 ? t.blocked : left <= 25 ? t.done : t.accent;
     const busiest = Object.entries(this.ranch.bySpace).sort((x, y) => y[1] - x[1])[0];
-    const spent = Object.values(this.ranch.cost ?? {}).reduce((x, y) => x + y, 0);
+    const spent = Object.entries(this.ranch.cost ?? {}).reduce((sum, [a, c]) => sum + Math.max(0, c - (this.ranch.costBase?.[a] ?? 0)), 0);
     const stage = treeStage(this.ranch.shipped);
     const prev = stage === 0 ? 0 : TREE_AT[stage - 1];
     const next = TREE_AT[stage];
@@ -500,7 +513,11 @@ export default class Agents extends View {
       .child(v_flex().flex_1().min_w(0).gap(4)
         .child(h_flex().gap(6).items_baseline()
           .child(div().text_size(15).font_bold().text_color(t.foreground).child(String(this.ranch.shipped)))
-          .child(div().flex_1().truncate().text_size(11.5).text_color(t.muted).child(`done today · ${worked(this.ranch.worked)}${spent > 0 ? ` · $${spent.toFixed(2)}` : ""}`)))
+          .child(div().flex_1().truncate().text_size(11.5).text_color(t.muted).child(`done today · ${worked(this.ranch.worked)}`))
+          .when(spent > 0, (el) => el.child(div().id("ranch-spend").flex_none().text_size(11.5).text_color(t.muted).cursor_pointer()
+            .hover((s) => s.text_color(t.foreground)).tooltip("Today's spend. Click to start counting from zero.")
+            .on_click((_e, cx) => { cx.stop_propagation(); this.resetSpend(); cx.notify(); })
+            .child(`$${spent.toFixed(2)}`))))
         .child(h_flex().gap(6).items_center()
           .child(div().flex_1().h(4).rounded(2).bg(t.border).child(div().h_full().w(`${Math.round(Math.min(1, grow) * 100)}%`).rounded(2).bg(droop ? t.done : t.working)))
           .child(div().flex_none().text_size(10).text_color(droop ? t.blocked : t.dim).child(droop ? "someone's waiting" : next == null ? "in bloom" : `${next - this.ranch.shipped} to grow`)))
