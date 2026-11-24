@@ -67,8 +67,11 @@ export default class Pane extends View {
     const names = shared("flock.names") ?? {};
     const variants = shared("flock.variant") ?? {};
     const hero = cast[p.terminal];
-    const sprite = hero ? `${hero}${variants[p.terminal] ? "-alt" : ""}${p.status === "working" ? "-work" : p.status === "blocked" ? "-blocked" : p.status === "done" ? "-done" : ""}` : null;
-    const animalName = hero ? names[p.terminal] : null;
+    // A plain terminal (not an agent) is the tortoise, with the random name the sidebar gave it.
+    const terminalName = !hero && p.terminal && !p.program?.agent ? (shared("ranch.terminal.names") ?? {})[p.terminal] : null;
+    const sprite = hero ? `${hero}${variants[p.terminal] ? "-alt" : ""}${p.status === "working" ? "-work" : p.status === "blocked" ? "-blocked" : p.status === "done" ? "-done" : ""}`
+      : terminalName ? (p.program?.shell ? "tortoise-idle" : "tortoise-work") : null;
+    const animalName = hero ? names[p.terminal] : terminalName;
     const pic = sprite ? image(`mods/flock/sprites/${sprite}.svg`).w(26).h(26).flex_none() : icon(p.program, 14, t.dim);
     const st = p.status;
     const pane = p.pane;

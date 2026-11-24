@@ -47,3 +47,43 @@ test("nothing to list gives an empty list, and bad input does not throw", () => 
   assert.deepEqual(terminalRows(spaces, [], "/Users/me", new Set()), []);
   assert.deepEqual(terminalRows(undefined, undefined, undefined, undefined), []);
 });
+
+import { nameTerminals, TERMINAL_NAMES } from "../mods/meadows/terminals.js";
+
+test("there are enough unique terminal names", () => {
+  assert.ok(TERMINAL_NAMES.length >= 24);
+  assert.equal(new Set(TERMINAL_NAMES).size, TERMINAL_NAMES.length);
+});
+
+test("each new terminal gets its own random name from the pool, and keeps it", () => {
+  let n = 0;
+  const random = () => [0.0, 0.5, 0.99][n++ % 3];
+  const first = nameTerminals(["t1", "t2", "t3"], {}, random);
+  const names = Object.values(first.names);
+  assert.equal(names.length, 3);
+  assert.equal(new Set(names).size, 3);
+  for (const name of names) assert.ok(TERMINAL_NAMES.includes(name), name);
+  assert.equal(first.changed, true);
+  const again = nameTerminals(["t1", "t2", "t3", "t4"], first.names, random);
+  for (const a of ["t1", "t2", "t3"]) assert.equal(again.names[a], first.names[a]);
+  assert.ok(!names.includes(again.names.t4));
+});
+
+test("a closed terminal's name is dropped, but an empty list (right after a start) drops nothing", () => {
+  const start = { t1: "Shelly", t2: "Mossy" };
+  assert.deepEqual(nameTerminals(["t1"], start, Math.random).names, { t1: "Shelly" });
+  const empty = nameTerminals([], start, Math.random);
+  assert.deepEqual(empty.names, start);
+  assert.equal(empty.changed, false);
+});
+
+test("terminalRows uses the pet name, says what is running, and marks a bare shell as resting", () => {
+  const names = { t2: "Mossy", t1: "Shelly" };
+  const rows = terminalRows(spaces, panes, "/Users/me", new Set(["s3"]), names);
+  const vite = rows.find((r) => r.pane === "p2");
+  assert.deepEqual({ name: vite.name, program: vite.program, state: vite.state }, { name: "Mossy", program: "node", state: "running" });
+  const sh = rows.find((r) => r.pane === "p1");
+  assert.deepEqual({ name: sh.name, program: sh.program, state: sh.state }, { name: "Shelly", program: "zsh", state: "resting" });
+  const noName = rows.find((r) => r.pane === "p6");
+  assert.equal(noName.name, "web dev");
+});

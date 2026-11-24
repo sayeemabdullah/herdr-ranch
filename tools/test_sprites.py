@@ -27,7 +27,7 @@ class SpriteTests(unittest.TestCase):
         sprites.main()
 
     def test_every_expected_file_exists(self):
-        ids = COMMON + RARE + ["sheepdog"] + [f"{a}-alt" for a in COMMON]
+        ids = COMMON + RARE + ["sheepdog", "tortoise"] + [f"{a}-alt" for a in COMMON]
         for i in ids:
             for pose in POSES:
                 self.assertTrue(os.path.exists(os.path.join(SPRITES, f"{i}{pose}.svg")), f"{i}{pose}")
@@ -59,7 +59,7 @@ class SpriteTests(unittest.TestCase):
                     self.assertEqual(body[y][:6], "......", f"{name}{suffix} row {y}")
 
     def test_frames_differ(self):
-        for i in COMMON + RARE + ["sheepdog"]:
+        for i in COMMON + RARE + ["sheepdog", "tortoise"]:
             a = read(os.path.join(SPRITES, f"{i}-work.svg"))
             b = read(os.path.join(SPRITES, f"{i}-2.svg"))
             self.assertNotEqual(a, b, f"{i} work frames")

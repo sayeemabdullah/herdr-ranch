@@ -2,8 +2,8 @@
 
 ## Unreleased
 
-- **The `ranch` command.** Type `ranch` in any terminal to open VS Code there, through [terminal-code](https://github.com/zenbu-labs/terminal-code): `ranch`, `ranch <path>`, `ranch review` (what changed) and `ranch diff a b`; everything else goes to `tode`. Install it with `./install.sh --cli` (or `--cli-only`); it never replaces a different `ranch`. If terminal-code is missing, `ranch` asks before running its official installer (`ranch install` does it directly); nothing is installed without a yes.
-- **Terminals section.** Under Reviewer, your plain terminals (dev servers, tests, shells) are listed with their program, folder and space, with a dot while something is running; click one to jump to its pane. Agents and the PR Panel are not listed.
+- **The `ranch` command.** Type `ranch` in any terminal to open VS Code (inside herdr, in a new tab that shows up under Terminals; `ranch --here` keeps it in the current terminal), through [terminal-code](https://github.com/zenbu-labs/terminal-code): `ranch`, `ranch <path>`, `ranch review` (what changed) and `ranch diff a b`; everything else goes to `tode`. Install it with `./install.sh --cli` (or `--cli-only`); it never replaces a different `ranch`. If terminal-code is missing, `ranch` asks before running its official installer (`ranch install` does it directly); nothing is installed without a yes.
+- **Terminals section, with its own animal.** Under Reviewer, your plain terminals (dev servers, tests, shells) are cards like Scout's, with the **tortoise** (it walks while a program runs and tucks into its shell when the terminal is a bare shell) and a random name that each terminal keeps, also shown in its pane header. A card says what is running, the folder and the space; click it to jump to the pane. Agents and the PR Panel are not listed.
 
 ## 0.1.0
 

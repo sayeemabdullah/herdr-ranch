@@ -491,9 +491,30 @@ def sheepdog(c, ph):
             c.dot(x, 11, "W")
 
 
+def tortoise(c, ph):
+    """The terminals' animal: it carries a shell, so it is the animal for shells. Resting, it tucks its head in."""
+    feet(c, ph, "T", "t", dx=6.9, y=21.4, rx=2.5, ry=1.4)
+    c.ell(12, 12.6, 9.4, 7.2, "M")
+    c.rect(4, 17, 19, 18, "C")
+    c.shade("M", "m")
+    c.light("M", "I")
+    c.ell(12, 10.8, 3.2, 2.6, "I")
+    for x, y in ((6.8, 11.2), (17.2, 11.2), (9.4, 15.2), (14.6, 15.2)):
+        c.ell(x, y, 1.9, 1.4, "I")
+    for x, y in ((9.2, 8.6), (14.8, 8.6)):
+        c.dot(x, y, "m")
+    if c.lie:
+        c.ell(12, 19.4, 3.4, 1.3, "K")
+    else:
+        c.ell(12, 19.8, 3.8, 2.7, "T")
+        c.rect(21, 17, 22, 17, "t", abs_=True)
+        eyes(c, 19.2, 1.7)
+
+
 ANIMALS = {
     "sheep": sheep, "goat": goat, "rabbit": rabbit, "chicken": chicken, "cow": cow, "horse": horse,
     "duck": duck, "llama": llama, "fox": fox, "owl": owl, "dragon": dragon, "sheepdog": sheepdog,
+    "tortoise": tortoise,
 }
 
 

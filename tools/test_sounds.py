@@ -12,7 +12,8 @@ class SoundTests(unittest.TestCase):
     def test_every_animal_has_a_sound_file(self):
         import sprites
         for name in list(sprites.ANIMALS):
-            if name == "sheepdog":
+            # Scout and the terminal tortoise are not agents, so they make no sound.
+            if name in ("sheepdog", "tortoise"):
                 continue
             self.assertTrue(os.path.exists(os.path.join(sounds.SOUNDS, f"{name}.wav")), name)
 

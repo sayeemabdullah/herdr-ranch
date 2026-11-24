@@ -76,7 +76,7 @@ Looking at an animal (focusing its pane) resets it to "Resting". Sub-agents show
 
 - **Spaces** with arch-badge emblems (barn, silo, haystack, pond, windmill, orchard, fence). The sky follows your clock: dawn, day, dusk, night with a moon and stars. A star twinkles while an agent in that space is working.
 - **Reviewer.** A space where [PR Reviewer](https://github.com/sayeemabdullah/herdr-PR-reviewer)'s PR Panel (or its watcher) is running moves out of the list into a section of its own under Spaces. The space's name doesn't matter, and a space that only has "PR Reviewer" in its name (say, where you write the plugin) stays a normal space: Scout the sheepdog, what it is doing (Reviewing, Needs you, Review done, Waiting for PRs), one click to the space. Claude reviews the pull requests you're asked to review there.
-- **Terminals.** Under Reviewer, a section for your plain terminals: dev servers, tests, VS Code through `ranch`, shells. Each row has the program's icon, its name, the folder, the space and a dot that is lit while something is running (programs come before bare shells). Click a row to jump to that pane. Agents, mod panes and the PR Panel are not listed, and the section is hidden when there is nothing to show.
+- **Terminals.** Under Reviewer, a section for your plain terminals (dev servers, tests, VS Code through `ranch`, shells), as cards like Scout's. Terminals have their own animal, the **tortoise** (it carries a shell): it walks while a program runs and tucks into its shell when the terminal is a bare shell. Each terminal gets a random name once (Clank, Mossy, Pebble…) and keeps it, also in its pane header. A card says what is running, the folder and the space, with a dot that is lit while something runs; programs come before bare shells. Click a card to jump to that pane. Agents, mod panes and the PR Panel are not listed, and the section is hidden when there is nothing to show.
 - **Ranch board.** Tasks done today, work time and spend, an apple tree that grows with your day (stages at 1, 4, 8, 13, 19 and 26 tasks, blossoms at 30, droops while someone has waited on you for over 5 minutes), and a gauge for the lowest 5-hour quota left.
 - **Agent cards.** The animal, its name (click to rename), its state, the model and cost, the space, the tab title, an **HP** bar (context used, green then yellow then red) and an **SP** bar (5-hour quota left), and after a task what it changed.
 - **Needs-you bell.** Rings with a red count in the Agents header. Click it for every waiting animal across all spaces, longest wait first; click a row to jump to that agent.
@@ -110,7 +110,7 @@ What it shares is the agent's recent conversation: its screen history without th
 
 ### Open VS Code in your terminal: `ranch`
 
-Type `ranch` in any terminal and VS Code opens right there, in the terminal, through [terminal-code](https://github.com/zenbu-labs/terminal-code) (its `tode` command).
+Type `ranch` in any terminal and VS Code opens in the terminal, through [terminal-code](https://github.com/zenbu-labs/terminal-code) (its `tode` command). Inside herdr it opens **in a new tab** in the current folder, and shows up under Terminals as a tortoise card with a random name. `ranch --here` (or `RANCH_HERE=1`) keeps it in the terminal you typed it in; outside herdr it always does.
 
 ```sh
 ranch                  # open the current folder
@@ -121,7 +121,9 @@ ranch install          # install terminal-code if it is missing
 ranch -g app.js:40:2   # anything else goes to tode: open at line 40, column 2
 ```
 
-`ranch review` pairs with the `✎ 3 files +120 −30` line on a finished card: when an agent is done, go to its folder and read the change. Install the command with `./install.sh --cli` (or `--cli-only` without the layout). It goes to `~/.local/bin` (set `RANCH_BIN_DIR` to change that) and never replaces a different command called `ranch`. `ranch` needs terminal-code itself. If it is missing, the first `ranch` asks "Install it now with its official installer (`curl -fsSL https://tode.sh/install | bash`)? [y/N]", and nothing is installed unless you answer yes. `ranch install` does it directly, and `RANCH_INSTALL_TODE=yes` or `no` answers for scripts. Without a yes, `ranch` prints the install line and stops.
+`ranch review` pairs with the `✎ 3 files +120 −30` line on a finished card: when an agent is done, go to its folder and read the change. Install the command with `./install.sh --cli` (or `--cli-only` without the layout). It goes to `~/.local/bin` (set `RANCH_BIN_DIR` to change that) and never replaces a different command called `ranch`. **What you need.** You do **not** need VS Code installed. terminal-code brings its own: its installer downloads terminal-code (about 135 MB, to `~/.local/lib/tode`), and the first time it runs it downloads [code-server](https://github.com/coder/code-server) (VS Code in the browser, about 210 MB, to `~/.local/share/tode`), which is the VS Code engine. So the first run needs the internet and takes a minute, then it works offline. You do need macOS or Linux (Windows through WSL), and a terminal that can draw images (the kitty graphics protocol; Ghostty, which herdr uses, does). On Linux a few Chromium libraries may be missing, and its installer lists them. Your own VS Code settings and extensions can be brought over with `tode --import`.
+
+`ranch` needs terminal-code itself. If it is missing, the first `ranch` asks "Install it now with its official installer (`curl -fsSL https://tode.sh/install | bash`)? [y/N]", and nothing is installed unless you answer yes. `ranch install` does it directly, and `RANCH_INSTALL_TODE=yes` or `no` answers for scripts. Without a yes, `ranch` prints the install line and stops.
 
 ### Space emblems
 
@@ -219,7 +221,7 @@ rm -rf layouts/Herdr-Ranch.* themes/ranch-*.json mods/flock mods/flock-status mo
   </tr>
 </table>
 
-A new agent gets one of the 8 common animals nobody is using; when all 8 are taken it takes one of the least used, in alternate colours. About 1 agent in 10 is a rare animal instead (fox 6%, owl 3%, dragon 1% of all agents). Rares never use up a common slot, and Scout is never given to an agent. The animal, its name and its colour are kept per terminal, so they survive restarts.
+The terminals have their own animal, the tortoise, and never share the agents' cast. A new agent gets one of the 8 common animals nobody is using; when all 8 are taken it takes one of the least used, in alternate colours. About 1 agent in 10 is a rare animal instead (fox 6%, owl 3%, dragon 1% of all agents). Rares never use up a common slot, and Scout is never given to an agent. The animal, its name and its colour are kept per terminal, so they survive restarts.
 
 ## What it runs
 

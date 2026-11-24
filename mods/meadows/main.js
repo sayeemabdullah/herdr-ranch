@@ -7,7 +7,7 @@ import { View, div, svg, image } from "gpui-kit";
 import { v_flex, h_flex, ScrollHandle } from "gpui-base";
 import { spaces, machines, panes, terminals, run, openOverlay, exec, hc, theme, shared, setShared, watchFolder, window, layout, home } from "herdr";
 import { reviewerSpaces } from "./reviewer.js";
-import { terminalRows } from "./terminals.js";
+import { terminalRows, nameTerminals } from "./terminals.js";
 
 function find(node, id) {
   if (node?.id === id) return node;
@@ -72,6 +72,22 @@ function emblemPicture(src, working, t) {
       .loop("opacity", { from: -1, to: 2, period: 900, easing: "linear" }));
 }
 // The PR Reviewer's space always shows the sheepdog, Scout, and never uses up an emblem.
+// The animals of the sidebar's own sections (Scout for the Reviewer, the tortoise for terminals): a 32px picture that
+// steps while "working" and breathes while "idle", like the agent cards; other states are still poses.
+const PET = 32;
+const TERMINAL_NAMES_KEY = "ranch.terminal.names";
+function petPicture(base, status) {
+  const sprite = (name) => image(`mods/flock/sprites/${name}.svg`).w(PET).h(PET).flex_none();
+  const pose = status === "working" ? `${base}-work` : status === "idle" ? `${base}-idle` : status === "blocked" || status === "done" ? `${base}-${status}` : base;
+  const next = status === "working" ? `${base}-2` : status === "idle" ? `${base}-idle-2` : null;
+  const still = sprite(pose);
+  if (!next) return still;
+  const period = status === "working" ? 800 : 1800;
+  return div().relative().w(PET).h(PET).flex_none()
+    .child(still.loop("opacity", { from: 7, to: -6, period, easing: "linear" }))
+    .child(sprite(next).absolute().top(0).left(0).loop("opacity", { from: -6, to: 7, period, easing: "linear" }));
+}
+
 // A space is the Reviewer only while PR Reviewer's PR Panel (or its watcher) runs in it, not by its name;
 // render() refreshes this set on every pass.
 let reviewerIds = new Set();
@@ -565,21 +581,22 @@ export default class Spaces extends View {
       .child(div().absolute().right(5).text_color(tone(t, w.status)).child(glyph(w.status))));
   }
 
-  // Plain terminals (dev servers, VS Code through `ranch`, shells), under Spaces and Reviewer: one click to the pane.
+  // Plain terminals (dev servers, VS Code through `ranch`, shells), under Spaces and Reviewer, as cards like Scout's:
+  // the tortoise (the terminals' own animal), a random name, what runs in it, one click to its pane.
   terminalsSection(t, rows) {
     const SHOWN = 8;
-    const icon = (r) => (r.icon ? (r.tint ? svg(r.icon).size(14).flex_none().text_color(t.muted) : image(r.icon).w(14).h(14).flex_none())
-      : svg("mods/workspace-chrome/terminal.svg").size(14).flex_none().text_color(t.muted));
     return v_flex().flex_none().pt(10).pb(4).mx(-8)
       .child(h_flex().h(31).pl(16).pr(10).gap(6).items_center().text_size(11.5).text_color(t.dim)
         .child("Terminals").child(div().text_color(t.dim).child(String(rows.length))))
-      .children(rows.slice(0, SHOWN).map((r) => h_flex().id(`terminal-${r.pane}`).mx(8).px(8).h(36).gap(9).items_center().rounded(4)
+      .children(rows.slice(0, SHOWN).map((r) => h_flex().id(`terminal-${r.pane}`).mx(8).my(2).px(8).h(50).gap(10).items_center().rounded(8)
+        .border(1).border_color(t.border)
         .cursor_pointer().hover((el) => el.bg(t.hover))
         .on_click(() => run("pane.focus", { pane: r.pane }))
-        .child(icon(r))
+        .child(petPicture("tortoise", r.running ? "working" : "idle"))
         .child(v_flex().flex_1().min_w(0)
-          .child(div().truncate().text_size(12.5).font_semibold().text_color(t.foreground).child(r.name))
-          .child(div().truncate().text_size(10.5).text_color(t.dim).child([r.folder, r.space].filter(Boolean).join(" · "))))
+          .child(div().truncate().font_semibold().text_color(t.foreground).child(r.name))
+          .child(div().truncate().text_size(11).text_color(t.dim)
+            .child([r.running ? `Running ${r.program}` : "Resting", r.folder, r.space].filter(Boolean).join(" · "))))
         .child(div().size(6).flex_none().rounded(3).bg(r.running ? t.working : t.border))))
       .when(rows.length > SHOWN, (el) => el.child(div().mx(8).px(8).h(24).flex().items_center().text_size(11).text_color(t.dim).child(`+${rows.length - SHOWN} more`)));
   }
@@ -588,18 +605,6 @@ export default class Spaces extends View {
   // and one click to its space.
   reviewerSection(t) {
     const WORDS = { working: "Reviewing", blocked: "Needs you", done: "Review done", idle: "Waiting for PRs" };
-    const sprite = (name) => image(`mods/flock/sprites/${name}.svg`).w(32).h(32).flex_none();
-    const pose = (status) => (status === "working" ? "sheepdog-work" : status === "idle" ? "sheepdog-idle" : status === "blocked" || status === "done" ? `sheepdog-${status}` : "sheepdog");
-    const second = (status) => (status === "working" ? "sheepdog-2" : status === "idle" ? "sheepdog-idle-2" : null);
-    const picture = (status) => {
-      const still = sprite(pose(status));
-      const next = second(status);
-      if (!next) return still;
-      const period = status === "working" ? 800 : 1800;
-      return div().relative().w(32).h(32).flex_none()
-        .child(still.loop("opacity", { from: 7, to: -6, period, easing: "linear" }))
-        .child(sprite(next).absolute().top(0).left(0).loop("opacity", { from: -6, to: 7, period, easing: "linear" }));
-    };
     return v_flex().flex_none().pt(10).pb(4).mx(-8)
       .child(h_flex().h(31).pl(16).pr(10).items_center().text_size(11.5).text_color(t.dim).child("Reviewer"))
       .children(this.reviewers.map(({ w }) => h_flex().id(`reviewer-${w.id}`).mx(8).my(2).px(8).h(50).gap(10).items_center().rounded(8)
@@ -607,7 +612,7 @@ export default class Spaces extends View {
         .when(w.active, (el) => el.bg(t.selected))
         .cursor_pointer().hover((el) => el.bg(t.hover))
         .on_click(() => run("space.select", { id: w.id }))
-        .child(picture(w.status))
+        .child(petPicture("sheepdog", w.status))
         .child(v_flex().flex_1().min_w(0)
           .child(div().truncate().font_semibold().text_color(t.foreground).child("Scout"))
           .child(div().truncate().text_size(11).text_color(w.status === "blocked" ? t.blocked : t.dim).child(`${WORDS[w.status] ?? "Waiting for PRs"} · ${w.name}`)))
@@ -618,7 +623,14 @@ export default class Spaces extends View {
     const t = theme();
     const collapsed = narrow();
     reviewerIds = reviewerSpaces(spaces(), panes(), terminals());
-    const termRows = collapsed ? [] : terminalRows(spaces(), panes(), home(), reviewerIds);
+    // Every plain terminal gets a random name once and keeps it, like the agents' animals.
+    let termRows = [];
+    if (!collapsed) {
+      const plain = terminalRows(spaces(), panes(), home(), reviewerIds);
+      const named = nameTerminals(plain.map((r) => r.terminal), shared(TERMINAL_NAMES_KEY) ?? {});
+      if (named.changed) setShared(TERMINAL_NAMES_KEY, named.names);
+      termRows = terminalRows(spaces(), panes(), home(), reviewerIds, named.names);
+    }
     const palette = ["ansi6", "ansi3", "ansi4", "ansi5", "ansi2", "ansi1"];
     const sp = spaces();
     const ids = new Set(sp.map(p => p.id));

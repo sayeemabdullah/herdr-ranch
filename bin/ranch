@@ -9,13 +9,15 @@ INSTALL_HINT='curl -fsSL https://tode.sh/install | bash'
 
 usage() {
   cat <<'TXT'
-ranch: open VS Code in this terminal (through terminal-code).
+ranch: open VS Code in the terminal (through terminal-code).
+Inside herdr it opens in a new tab, which shows up under Terminals in the sidebar.
 
   ranch                    open the current folder
   ranch <folder|file>      open it
   ranch review [folder]    open the source control view: what changed
   ranch diff <a> <b>       compare two files
   ranch <tode options>     anything else goes to tode: -g file:line:col, --split right, --ssh user@host ...
+  ranch --here <...>       keep it in this terminal instead of a new tab (or set RANCH_HERE=1)
   ranch install            install terminal-code (the `tode` command) with its official installer
 
 Needs terminal-code. If it is missing, ranch asks before installing it; nothing is installed without a yes.
@@ -26,6 +28,10 @@ TXT
 case "${1:-}" in
   -h|--help|help) usage; exit 0 ;;
 esac
+
+# --here (or RANCH_HERE=1) keeps VS Code in this terminal; otherwise, inside herdr, it opens in a new tab.
+here="${RANCH_HERE:-}"
+if [ "${1:-}" = "--here" ]; then here=1; shift; fi
 
 # Runs terminal-code's own installer, only because you asked (ranch install, or a yes). Nothing else is installed.
 install_tode() {
@@ -67,12 +73,22 @@ if ! command -v tode >/dev/null 2>&1; then
 fi
 
 case "${1:-}" in
-  review)
-    shift
-    exec tode "$@" --review ;;
-  diff)
-    shift
-    exec tode --diff "$@" ;;
-  *)
-    exec tode "$@" ;;
+  review) shift; targs=("$@" --review) ;;
+  diff) shift; targs=(--diff "$@") ;;
+  *) targs=("$@") ;;
 esac
+
+# A JSON string for herdr: backslashes, quotes and tabs escaped.
+json_string() { printf '"%s"' "$(printf '%s' "$1" | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g' -e 's/\t/\\t/g')"; }
+
+if [ -z "$here" ] && command -v herdr-app >/dev/null 2>&1 && herdr-app status >/dev/null 2>&1; then
+  argv="[$(json_string "$(command -v tode)")"
+  for a in ${targs[@]+"${targs[@]}"}; do argv="$argv,$(json_string "$a")"; done
+  argv="$argv]"
+  if herdr-app do terminal.open "{\"argv\":$argv,\"folder\":$(json_string "$PWD"),\"place\":\"tab\",\"name\":\"VS Code\"}" >/dev/null 2>&1; then
+    echo "Opened VS Code in a new tab."
+    exit 0
+  fi
+fi
+
+exec tode ${targs[@]+"${targs[@]}"}

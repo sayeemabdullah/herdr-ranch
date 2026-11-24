@@ -3,7 +3,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, writeFileSync, chmodSync } from "node:fs";
+import { mkdtempSync, writeFileSync, chmodSync, realpathSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
@@ -138,4 +138,64 @@ test("without a terminal to ask on, and no yes, it only prints the install line"
 
 test("--help mentions ranch install", () => {
   assert.match(run(["--help"]).stdout, /ranch install/);
+});
+
+// Inside herdr, ranch opens VS Code in a new tab through `herdr-app do terminal.open`. A stand-in herdr-app logs its calls.
+const withHerdr = () => {
+  const dir = mkdtempSync(join(tmpdir(), "ranch-herdr-"));
+  const log = join(dir, "calls.log");
+  writeFileSync(join(dir, "herdr-app"), `#!/bin/sh
+if [ "$1" = status ]; then exit "\${STUB_STATUS:-0}"; fi
+echo "$@" >> "${log}"
+`);
+  chmodSync(join(dir, "herdr-app"), 0o755);
+  return { dir, log };
+};
+const runHerdr = (args, h, env = {}) =>
+  spawnSync("bash", [RANCH, ...args], { encoding: "utf8", cwd: h.dir, env: { PATH: `${h.dir}:${stub}:/usr/bin:/bin`, HOME: stub, ...env } });
+const calls = (h) => (existsSync(h.log) ? readFileSync(h.log, "utf8").trim().split("\n") : []);
+
+test("inside herdr, ranch opens VS Code in a new tab in the current folder, and runs nothing here", () => {
+  const h = withHerdr();
+  const r = runHerdr(["src"], h);
+  assert.equal(r.status, 0, r.stderr);
+  assert.match(r.stdout, /Opened VS Code in a new tab/);
+  assert.doesNotMatch(r.stdout, /^tode:/m);
+  const [call] = calls(h);
+  assert.match(call, /^do terminal\.open /);
+  const json = JSON.parse(call.replace(/^do terminal\.open /, ""));
+  assert.equal(json.place, "tab");
+  assert.equal(realpathSync(json.folder), realpathSync(h.dir));
+  assert.equal(json.name, "VS Code");
+  assert.deepEqual(json.argv.slice(1), ["src"]);
+  assert.match(json.argv[0], /tode$/);
+});
+
+test("the aliases and odd arguments carry into the new tab unchanged", () => {
+  const h = withHerdr();
+  runHerdr(["review", "./app"], h);
+  runHerdr(["-g", 'my "file".js:3:1'], h);
+  const argvs = calls(h).map((c) => JSON.parse(c.replace(/^do terminal\.open /, "")).argv.slice(1));
+  assert.deepEqual(argvs[0], ["./app", "--review"]);
+  assert.deepEqual(argvs[1], ["-g", 'my "file".js:3:1']);
+});
+
+test("--here and RANCH_HERE=1 keep it in this terminal", () => {
+  const h = withHerdr();
+  assert.equal(runHerdr(["--here", "src"], h).stdout.trim(), "tode:src");
+  assert.equal(runHerdr(["src"], h, { RANCH_HERE: "1" }).stdout.trim(), "tode:src");
+  assert.deepEqual(calls(h), []);
+});
+
+test("when herdr is not running, ranch just opens tode here", () => {
+  const h = withHerdr();
+  const r = runHerdr(["src"], h, { STUB_STATUS: "1" });
+  assert.equal(r.stdout.trim(), "tode:src");
+  assert.deepEqual(calls(h), []);
+});
+
+test("--help mentions the new tab and --here", () => {
+  const out = run(["--help"]).stdout;
+  assert.match(out, /new tab/);
+  assert.match(out, /--here/);
 });
