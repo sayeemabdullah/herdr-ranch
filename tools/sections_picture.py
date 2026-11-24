@@ -91,10 +91,8 @@ class Pen:
         self.box(x0, y, x1, y + 42, 8, outline=c["red"] if stopped else c["border"])
         self.paste(critter(name, "-blocked" if stopped else "", 28 * self.s), x0 + 8, y + 7)
         plate = f":{port}"
-        pw = self.d.textlength(plate, font=font(11.5 * self.s, "Semibold")) / self.s + 10
         px = x0 + 46
-        self.box(px, y + 6, px + pw, y + 22, 4, fill=c["red"] if stopped else c["gold"])
-        self.text(px + 5, y + 7, plate, 11.5, (255, 255, 255) if stopped else c["on_gold"], "Semibold")
+        pw = self.text(px, y + 7, plate, 12, c["red"] if stopped else c["accent"], "Semibold")
         self.text(px + pw + 6, y + 7, "stopped" if stopped else program, 12, c["muted"] if stopped else c["fg"])
         self.text(px, y + 25, where, 10, c["dim"])
         if stopped:
