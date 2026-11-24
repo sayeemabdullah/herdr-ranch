@@ -6,7 +6,7 @@
 
 import { View, div, svg, image } from "gpui-kit";
 import { h_flex } from "gpui-base";
-import { panes, props, run, theme, home, layout, shared } from "herdr";
+import { panes, spaces, props, run, theme, home, layout, shared } from "herdr";
 
 // Match the first visible tab frame, including the active child of a stack.
 function paneFrame(node) {
@@ -61,7 +61,9 @@ export default class Pane extends View {
     const t = theme();
     const p = this.me();
     if (!p) return div();
-    const name = p.name || ((p.program?.agent || p.program?.shell) && p.program.name) || p.title || p.program?.name || "shell";
+    // The tab `ranch` opens is named VS Code; its terminal title ("t1n") and process (an Electron helper) say little.
+    const inVsCodeTab = !p.program?.agent && spaces().some((s) => (s.tabs ?? []).some((tab) => tab.id === p.tab && tab.name === "VS Code"));
+    const name = inVsCodeTab ? "VS Code" : p.name || ((p.program?.agent || p.program?.shell) && p.program.name) || p.title || p.program?.name || "shell";
     // An agent's animal and its name stand in for the program's icon and name.
     const cast = shared("flock.cast") ?? {};
     const names = shared("flock.names") ?? {};
