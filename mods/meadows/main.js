@@ -744,11 +744,11 @@ export default class Spaces extends View {
         .border(1).border_color(t.blocked ?? t.border)
         .child(critterPicture(critters[g.port] ?? CRITTERS[0], "gone"))
         .child(v_flex().flex_1().min_w(0)
-          .child(h_flex().gap(6).items_baseline().child(div().font_semibold().text_color(t.blocked ?? t.foreground).child(`:${g.port}`)).child(div().truncate().text_color(t.muted).child("stopped")))
+          .child(h_flex().gap(6).items_baseline().child(div().px(5).rounded(4).bg(t.blocked ?? "#d94a4a").font_semibold().text_size(12).text_color("#ffffff").child(`:${g.port}`)).child(div().truncate().text_color(t.muted).child("stopped")))
           .child(div().truncate().text_size(11).text_color(t.dim).child(g.cmd)))
         .child(div().id(`restart-${g.pid}`).px(8).h(24).flex().items_center().rounded(6).flex_none().text_size(11).text_color(t.accent ?? t.foreground)
           .cursor_pointer().hover((el) => el.bg(t.raised ?? t.hover))
-          .on_click((_e, cx) => this.restart(g, cx)).child("\u21bb Restart"))))
+          .on_click((_e, cx) => this.restart(g, cx)).child(h_flex().gap(5).items_center().child(image("mods/flock/icons/ui-play.svg").w(12).h(12).flex_none()).child("Restart")))))
       .children(this.servers.map((sv) => {
         const asking = this.stopping?.pid === sv.pid && Date.now() < this.stopping.until;
         return h_flex().id(`server-${sv.pid}`).mx(8).my(2).px(8).h(50).gap(10).items_center().rounded(8)
@@ -758,14 +758,14 @@ export default class Spaces extends View {
           .child(critterPicture(critters[sv.port] ?? CRITTERS[0], "running"))
           .child(v_flex().flex_1().min_w(0)
             .child(h_flex().gap(6).items_baseline()
-              .child(div().font_semibold().text_color(t.working ?? t.foreground).child(`:${sv.port}`))
+              .child(div().px(5).rounded(4).bg(t.solid ?? t.accent ?? "#f2c744").font_semibold().text_size(12).text_color(t.solid_foreground ?? "#33062b").child(`:${sv.port}`))
               .child(div().truncate().text_color(t.foreground).child(sv.command)))
             .child(div().truncate().text_size(11).text_color(t.dim).child([sv.place.name, sv.up].filter(Boolean).join(" \u00b7 "))))
           .child(div().id(`stop-${sv.pid}`).px(6).h(24).flex().items_center().justify_center().rounded(6).flex_none()
             .text_size(11).text_color(asking ? t.blocked : t.dim).hover((el) => el.bg(t.raised ?? t.hover))
             .on_mouse_down("left", (_e, cx) => cx.stop_propagation())
             .on_click((_e, cx) => { cx.stop_propagation(); this.stop(sv, cx); })
-            .child(asking ? "Stop?" : svg("mods/pane/close.svg").size(12)));
+            .child(asking ? "Stop?" : image("mods/flock/icons/ui-x.svg").w(12).h(12).flex_none()));
       }));
   }
 
@@ -783,7 +783,7 @@ export default class Spaces extends View {
         .child(div().id(`tree-new-${mainPath}`).size(22).flex().items_center().justify_center().rounded(6).text_size(13)
           .cursor_pointer().hover((el) => el.bg(t.hover).text_color(t.foreground))
           .on_click(() => openOverlay({ mod: "worktree", kind: "dialog", width: 460, height: 280, props: { folder: mainPath, machine: "", argv: ["claude"] } }))
-          .child("+")));
+          .child(image("mods/flock/icons/ui-plus.svg").w(12).h(12).flex_none())));
       g.trees.forEach((wt, n) => rows.push(h_flex().id(`tree-${wt.path}`).mx(8).px(8).h(28).gap(7).items_center().rounded(7)
         .cursor_pointer().hover((el) => el.bg(t.hover))
         .on_click(() => (wt.space ? run("space.select", { id: wt.space }) : run("space.new", { folder: wt.path, machine: "" })))

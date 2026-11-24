@@ -874,6 +874,15 @@ def confetti_grids():
 
 # ---------------------------------------------------------------- output
 
+def ui_icon_grids():
+    """Small pixel buttons for the Servers and Worktrees sections: stop (x), new (+), run again (play)."""
+    x = ["ww.....ww", ".ww...ww.", "..ww.ww..", "...www...", "....w....", "...www...", "..ww.ww..", ".ww...ww.", "ww.....ww"]
+    plus = ["....ww....", "....ww....", "....ww....", "....ww....", "wwwwwwwwww", "wwwwwwwwww", "....ww....", "....ww....", "....ww....", "....ww...."]
+    play = ["M....", "MM...", "MMM..", "MMMM.", "MMMMM", "MMMM.", "MMM..", "MM...", "M...."]
+    play = ["..." + r + "." for r in play]
+    return {"ui-x": x, "ui-plus": plus, "ui-play": play}
+
+
 def render(g, display):
     n = len(g)
     rects = []
@@ -907,7 +916,7 @@ def main():
         for name, grid in emblem_grids(phase).items():
             suffix = "" if phase == "day" else f"-{phase}"
             write(os.path.join(EMBLEMS, f"{name}{suffix}.svg"), render(grid, EMBLEM))
-    for name, grid in {**alarm_grids(), **bell_grids(), **tree_grids()}.items():
+    for name, grid in {**alarm_grids(), **bell_grids(), **tree_grids(), **ui_icon_grids()}.items():
         write(os.path.join(ICONS, f"{name}.svg"), render(grid, 14))
     for name, grid in confetti_grids().items():
         write(os.path.join(SPRITES, f"{name}.svg"), render(grid, DISPLAY))
