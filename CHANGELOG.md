@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- **Terminals section.** Under Reviewer, your plain terminals (dev servers, tests, shells) are listed with their program, folder and space, with a dot while something is running; click one to jump to its pane. Agents and the PR Panel are not listed.
+
 ## 0.1.0
 
 First release. A herdr layout where every coding agent is its own pixel animal. Built for herdr-app 0.1.16 on macOS.

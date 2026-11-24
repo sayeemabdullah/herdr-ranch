@@ -5,8 +5,9 @@
 
 import { View, div, svg, image } from "gpui-kit";
 import { v_flex, h_flex, ScrollHandle } from "gpui-base";
-import { spaces, machines, panes, terminals, run, openOverlay, exec, hc, theme, shared, setShared, watchFolder, window, layout } from "herdr";
+import { spaces, machines, panes, terminals, run, openOverlay, exec, hc, theme, shared, setShared, watchFolder, window, layout, home } from "herdr";
 import { reviewerSpaces } from "./reviewer.js";
+import { terminalRows } from "./terminals.js";
 
 function find(node, id) {
   if (node?.id === id) return node;
@@ -564,6 +565,25 @@ export default class Spaces extends View {
       .child(div().absolute().right(5).text_color(tone(t, w.status)).child(glyph(w.status))));
   }
 
+  // Plain terminals (dev servers, VS Code through `ranch`, shells), under Spaces and Reviewer: one click to the pane.
+  terminalsSection(t, rows) {
+    const SHOWN = 8;
+    const icon = (r) => (r.icon ? (r.tint ? svg(r.icon).size(14).flex_none().text_color(t.muted) : image(r.icon).w(14).h(14).flex_none())
+      : svg("mods/workspace-chrome/terminal.svg").size(14).flex_none().text_color(t.muted));
+    return v_flex().flex_none().pt(10).pb(4).mx(-8)
+      .child(h_flex().h(31).pl(16).pr(10).gap(6).items_center().text_size(11.5).text_color(t.dim)
+        .child("Terminals").child(div().text_color(t.dim).child(String(rows.length))))
+      .children(rows.slice(0, SHOWN).map((r) => h_flex().id(`terminal-${r.pane}`).mx(8).px(8).h(36).gap(9).items_center().rounded(4)
+        .cursor_pointer().hover((el) => el.bg(t.hover))
+        .on_click(() => run("pane.focus", { pane: r.pane }))
+        .child(icon(r))
+        .child(v_flex().flex_1().min_w(0)
+          .child(div().truncate().text_size(12.5).font_semibold().text_color(t.foreground).child(r.name))
+          .child(div().truncate().text_size(10.5).text_color(t.dim).child([r.folder, r.space].filter(Boolean).join(" · "))))
+        .child(div().size(6).flex_none().rounded(3).bg(r.running ? t.working : t.border))))
+      .when(rows.length > SHOWN, (el) => el.child(div().mx(8).px(8).h(24).flex().items_center().text_size(11).text_color(t.dim).child(`+${rows.length - SHOWN} more`)));
+  }
+
   // A section like Spaces and Agents, there only while a PR Reviewer space exists: Scout, what it is doing,
   // and one click to its space.
   reviewerSection(t) {
@@ -598,6 +618,7 @@ export default class Spaces extends View {
     const t = theme();
     const collapsed = narrow();
     reviewerIds = reviewerSpaces(spaces(), panes(), terminals());
+    const termRows = collapsed ? [] : terminalRows(spaces(), panes(), home(), reviewerIds);
     const palette = ["ansi6", "ansi3", "ansi4", "ansi5", "ansi2", "ansi1"];
     const sp = spaces();
     const ids = new Set(sp.map(p => p.id));
@@ -630,6 +651,7 @@ export default class Spaces extends View {
         .on_mouse_up("left", (_e, cx) => { this.pressed = null; cx.notify(); })
         .children(list)
         // The Reviewer section follows the last space instead of sinking to the bottom of the block.
-        .when(!collapsed && this.reviewers?.length > 0, (el) => el.child(this.reviewerSection(t))));
+        .when(!collapsed && this.reviewers?.length > 0, (el) => el.child(this.reviewerSection(t)))
+        .when(termRows.length > 0, (el) => el.child(this.terminalsSection(t, termRows))));
   }
 }
