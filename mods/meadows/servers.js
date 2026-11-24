@@ -90,3 +90,10 @@ export function trackGone(prev, next, stopped, gone, now) {
     .filter((g) => now - g.at < GONE_FOR && !ports.has(g.port));
   return { gone: kept, fresh };
 }
+
+/** A command for a card: the program without its folder ("/opt/x/bin/Python -m http.server" -> "Python -m http.server"). */
+export function shortCommand(cmd) {
+  const m = /^(\S+)(.*)$/.exec(String(cmd ?? "").trim());
+  if (!m) return "";
+  return (m[1].split("/").pop() || m[1]) + m[2];
+}

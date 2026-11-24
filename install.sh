@@ -42,6 +42,8 @@ for file in "$LAYOUT.json" "$LAYOUT.png"; do
   cp "$REPO/layouts/$file" "$HERDR_HOME/layouts/"
 done
 
+[ -f "$REPO/VERSION" ] && cp "$REPO/VERSION" "$HERDR_HOME/herdr-ranch.version"
+
 if command -v herdr-app >/dev/null; then
   for mod in "${MODS[@]}"; do
     (cd "$HERDR_HOME" && herdr-app check "mods/$mod") || fail "mods/$mod did not load; see the message above."

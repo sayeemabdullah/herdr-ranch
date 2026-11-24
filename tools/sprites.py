@@ -875,12 +875,13 @@ def confetti_grids():
 # ---------------------------------------------------------------- output
 
 def ui_icon_grids():
-    """Small pixel buttons for the Servers and Worktrees sections: stop (x), new (+), run again (play)."""
+    """Small pixel buttons for the Servers and Worktrees sections: stop (x), new (+), run again (play), update (up arrow)."""
     x = ["ww.....ww", ".ww...ww.", "..ww.ww..", "...www...", "....w....", "...www...", "..ww.ww..", ".ww...ww.", "ww.....ww"]
     plus = ["....ww....", "....ww....", "....ww....", "....ww....", "wwwwwwwwww", "wwwwwwwwww", "....ww....", "....ww....", "....ww....", "....ww...."]
     play = ["M....", "MM...", "MMM..", "MMMM.", "MMMMM", "MMMM.", "MMM..", "MM...", "M...."]
     play = ["..." + r + "." for r in play]
-    return {"ui-x": x, "ui-plus": plus, "ui-play": play}
+    up = ["....o....", "...ooo...", "..ooooo..", ".ooooooo.", "ooooooooo", "...ooo...", "...ooo...", "...ooo...", "...ooo..."]
+    return {"ui-x": x, "ui-plus": plus, "ui-play": play, "ui-up": up}
 
 
 def render(g, display):

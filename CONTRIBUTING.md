@@ -54,4 +54,4 @@ ci: run the art check on every PR
 
 ## Changelog
 
-User-facing changes go under a version heading in [CHANGELOG.md](CHANGELOG.md). A release is its own `chore(release): x.y.z` PR.
+User-facing changes go under a version heading in [CHANGELOG.md](CHANGELOG.md). A release is its own `chore(release): x.y.z` PR, which also changes the number in `VERSION` (the Update button compares with it).

@@ -78,6 +78,9 @@ Looking at an animal (focusing its pane) resets it to "Resting". Sub-agents show
 - **Servers.** Every dev server running in one of your spaces or worktrees (found with `lsof`, local only) is a card under the spaces, with its own barnyard critter (a pig, cat, frog or hedgehog, one each, kept per port) that bobs while it runs: its port, its program, the space it belongs to and how long it has been up. Click a card to open `http://localhost:<port>` in your browser. The x asks "Stop?" and a second press within 4 seconds ends the process. If a server ends by itself you get a toast and its card stays for a minute with a Restart button, which runs the same command again in a new tab so you can see it. Nothing outside your projects is listed.
 - **Port clash.** When an agent's screen says a port is already in use (`EADDRINUSE` and the like), you get a toast naming the program and process that holds it.
 - **Worktrees.** A repo with more than one worktree gets its list in the same style as the nested spaces, with the ranch's pixel trees: a full tree for the main checkout, a young tree where a space is open on a branch, and a sapling ("+ open") where none is. Click one to jump to its space, or to make a space in that folder. A branch with a pull request shows `#42` and its CI (✓ passing, ✕ failing, … running, merged, closed, draft; needs the `gh` command and a GitHub repo); click it to open the PR. The **+** on a repo's heading makes a worktree and starts Claude in it.
+
+<p align="center"><img src="assets/servers-worktrees.png" alt="The Servers and Worktrees sections: a running server with a pink pig and its port on a gold plate, a stopped one with a frog, a red badge and a Restart button, then a repo's worktrees as pixel trees with their pull request and CI status" width="300"><br><sub>Servers (one running, one stopped) and a repo's worktrees. Names and numbers are made up.</sub></p>
+
 - **Ranch board.** Tasks done today, work time and spend, an apple tree that grows with your day (stages at 1, 4, 8, 13, 19 and 26 tasks, blossoms at 30, droops while someone has waited on you for over 5 minutes), and a gauge for the lowest 5-hour quota left.
 - **Agent cards.** The animal, its name (click to rename), its state, the model and cost, the space, the tab title, an **HP** bar (context used, green then yellow then red) and an **SP** bar (5-hour quota left), and after a task what it changed.
 - **Needs-you bell.** Rings with a red count in the Agents header. Click it for every waiting animal across all spaces, longest wait first; click a row to jump to that agent.
@@ -158,7 +161,9 @@ The script copies the layout, two themes and seven mods into `~/.config/herdr-ap
 
 ### Update
 
-Herdr Ranch has no automatic updates. To get a newer version, pull it and run the installer again:
+When a newer release is out, a gold **Update to vX.Y.Z** button appears at the right of the status bar (bottom of the window). Click it: a tab named "Update Ranch" opens, downloads that release and runs its installer, and you watch it. The check looks at GitHub's latest release a few seconds after start and then every 6 hours, and sends nothing about you. It needs the version file the installer writes (`herdr-ranch.version` in herdr's folder), so a copy installed before the button existed gets the button after its next manual update.
+
+To update by hand, pull the repo and run the installer again:
 
 ```sh
 cd herdr-ranch
@@ -238,11 +243,12 @@ python3 -m unittest discover -s tools
 | `layouts/` | `Herdr-Ranch.json` and its preview |
 | `themes/` | `ranch-dusk.json`, `ranch-meadow.json` |
 | `mods/flock` | the agent cards, board, bell, find, memory share, sounds' mute button (clone of herdr's `agents`) |
-| `mods/meadows` | spaces and the Reviewer section (clone of `spaces`) |
-| `mods/flock-status`, `flock-toast` | status bar and toasts |
+| `mods/meadows` | spaces, the Reviewer, Servers and Worktrees sections (clone of `spaces`) |
+| `mods/flock-status`, `flock-toast` | status bar (with the Update button) and toasts |
 | `mods/ranch-chrome`, `ranch-tabs`, `ranch-pane` | sign and footer, tab bar with the ranch strip, pane header |
 | `tools/` | the pictures, the sounds and the demo GIF, with their tests |
-| `assets/` | `demo.gif`, `memory-share.png` |
+| `assets/` | `demo.gif`, `memory-share.png`, `servers-worktrees.png`, `preview-dusk.png` |
+| `VERSION` | the release number the Update button compares with |
 
 [RECIPE.md](RECIPE.md) is the full brief the layout can be rebuilt from (the format herdr.dev's gallery uses). See [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request: changes go through PRs with Conventional Commit titles, never straight to `master`.
 

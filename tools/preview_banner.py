@@ -166,12 +166,16 @@ def main(shot_path=None):
                 line = t
         d.text((124, ly), line, font=fb, fill=(226, 190, 214))
         y += 106
-    ft = font(19, BOLD)
-    d.text((60, 722), "Also: needs-you bell  ·  find  ·  what a task changed  ·  honest spend", font=ft, fill=GOLD)
-    d.text((60, 748), "chiptune sounds  ·  day and night emblems  ·  CPU / RAM / disk  ·  2 themes", font=ft, fill=GOLD)
+    ft = font(18, BOLD)
+    for k, line in enumerate((
+        "Also: a critter for each server, with restart  \u00b7  worktrees with PR and CI",
+        "needs-you bell  \u00b7  find  \u00b7  what a task changed  \u00b7  honest spend",
+        "sounds  \u00b7  day and night emblems  \u00b7  CPU/RAM/disk  \u00b7  2 themes  \u00b7  update button",
+    )):
+        d.text((60, 716 + k * 24), line, font=ft, fill=GOLD)
 
     # fence and the herd
-    fy = 918
+    fy = 926
     for fx in range(0, W, 64):
         d.rectangle((fx + 20, fy - 40, fx + 34, fy + 55), fill=(122, 78, 44))
         d.rectangle((fx + 20, fy - 40, fx + 34, fy - 34), fill=(166, 112, 66))

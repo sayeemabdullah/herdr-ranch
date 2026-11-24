@@ -116,3 +116,11 @@ test("a port that is already in use is spotted on a screen, once", () => {
   r = watchAgent(r.state, { status: "working", screen: "listen EADDRINUSE :::3000" }, 3000);
   assert.deepEqual(r.fire, ["port"]);
 });
+
+import { shortCommand } from "../mods/meadows/servers.js";
+test("a command is shown without the folder of its program", () => {
+  assert.equal(shortCommand("/opt/homebrew/Cellar/python@3.14/bin/Python -m http.server 8123"), "Python -m http.server 8123");
+  assert.equal(shortCommand("node server.js --port 3000"), "node server.js --port 3000");
+  assert.equal(shortCommand(""), "");
+  assert.equal(shortCommand(undefined), "");
+});

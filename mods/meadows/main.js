@@ -7,7 +7,7 @@ import { View, div, svg, image } from "gpui-kit";
 import { v_flex, h_flex, ScrollHandle } from "gpui-base";
 import { spaces, machines, panes, terminals, run, openOverlay, exec, hc, theme, shared, setShared, watchFolder, window, layout, notify } from "herdr";
 import { reviewerSpaces } from "./reviewer.js";
-import { parseListeners, parseCwds, parseUptimes, parseCommands, pickServers, trackGone } from "./servers.js";
+import { parseListeners, parseCwds, parseUptimes, parseCommands, pickServers, trackGone, shortCommand } from "./servers.js";
 import { parseWorktrees, worktreeGroups, parsePr } from "./worktrees.js";
 
 function find(node, id) {
@@ -745,7 +745,7 @@ export default class Spaces extends View {
         .child(critterPicture(critters[g.port] ?? CRITTERS[0], "gone"))
         .child(v_flex().flex_1().min_w(0)
           .child(h_flex().gap(6).items_baseline().child(div().px(5).rounded(4).bg(t.blocked ?? "#d94a4a").font_semibold().text_size(12).text_color("#ffffff").child(`:${g.port}`)).child(div().truncate().text_color(t.muted).child("stopped")))
-          .child(div().truncate().text_size(11).text_color(t.dim).child(g.cmd)))
+          .child(div().truncate().text_size(11).text_color(t.dim).child(shortCommand(g.cmd))))
         .child(div().id(`restart-${g.pid}`).px(8).h(24).flex().items_center().rounded(6).flex_none().text_size(11).text_color(t.accent ?? t.foreground)
           .cursor_pointer().hover((el) => el.bg(t.raised ?? t.hover))
           .on_click((_e, cx) => this.restart(g, cx)).child(h_flex().gap(5).items_center().child(image("mods/flock/icons/ui-play.svg").w(12).h(12).flex_none()).child("Restart")))))
