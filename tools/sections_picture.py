@@ -130,7 +130,7 @@ class Pen:
         return yy
 
 
-def update_pill(pen, x1, y, text="Update to v0.2.0"):
+def update_pill(pen, x1, y, text="Update to v0.3.0"):
     """The gold (green in the light theme) Update button as it sits in the status bar, left of CPU."""
     c = pen.c
     w = pen.d.textlength(text, font=font(11 * pen.s, "Semibold")) / pen.s + 32

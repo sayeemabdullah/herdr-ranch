@@ -179,7 +179,7 @@ def main(shot_path=None):
     )):
         d.text((60, 726 + k * 24), line, font=ft, fill=GOLD)
     # the Update button itself, as it looks in the status bar
-    label = "Update to v0.2.0"
+    label = "Update to v0.3.0"
     fu = font(17, BOLD)
     pw = d.textlength(label, font=fu) + 44
     d.rounded_rectangle((668, 724, 668 + pw, 752), 8, fill=GOLD)
