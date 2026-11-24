@@ -1,6 +1,6 @@
 import { View, div, svg, image } from "gpui-kit";
 import { h_flex } from "gpui-base";
-import { spaces, agents, theme, run, window, keys, setBadge, checking, exec, appHome, home, readTextFile, notify, shared } from "herdr";
+import { spaces, agents, theme, run, window, keys, setBadge, checking, exec, appHome, home, readTextFile, notify, shared, openOverlay } from "herdr";
 import { RELEASE_API, isNewer, parseRelease, updateScript } from "./update.js";
 import { parseCpu, parseMemMac, parseMemLinux, parseDisk, formatGB } from "./vitals.js";
 
@@ -153,6 +153,10 @@ export default class WorkspaceStatus extends View {
         .bg(t.solid ?? "#f2c744").text_color(t.solid_foreground ?? "#33062b").text_size(11.5).font_semibold()
         .cursor_pointer().hover(s => s.opacity(0.9)).on_click(() => this.runUpdate())
         .child(svg("mods/flock/icons/ui-up.svg").size(11).text_color(t.solid_foreground ?? "#33062b").flex_none()).child(`Update to ${this.update.tag}`)))
+      // Always there, even when the version is hidden: it is how the version and the sections come back.
+      .child(div().id("ranch-settings").size(20).flex_none().flex().items_center().justify_center().rounded(5).cursor_pointer()
+        .hover(s => s.bg(t.hover)).on_click(() => openOverlay({ mod: "meadows", kind: "popup", width: 280, height: 290, props: { ranchSettings: true } }))
+        .child(svg("mods/flock/icons/ui-dots.svg").size(13).text_color(t.dim)))
       .when(!this.update && Boolean(this.version) && (shared("ranch.hide") ?? {}).update !== true, el => el.child(div().id("ranch-version").text_size(11).text_color(t.dim).cursor_pointer()
         .hover(s => s.text_color(t.foreground)).on_click((_e, cx) => this.checkUpdate(cx, true)).child(`Ranch v${this.version}`)))
       .child(this.meter(t, "CPU", this.vitals.cpu, this.vitals.cpu == null ? "--" : `${this.vitals.cpu}%`))

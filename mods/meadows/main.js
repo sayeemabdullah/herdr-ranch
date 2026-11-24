@@ -125,7 +125,7 @@ export function tone(t, status) {
 
 export default class Spaces extends View {
   init(_props, cx) {
-    if (props()?.ranchSettings) return; // the "Show in the sidebar" popup needs none of the below
+    if (props()?.ranchSettings) return; // the "Ranch settings" popup needs none of the below
     try { this.sectionsFolded = new Set(JSON.parse(localStorage.getItem(FOLD_KEY) ?? '["worktrees"]')); } catch { this.sectionsFolded = new Set(["worktrees"]); }
     this.git = {}; // where() -> { name, branch, ahead, behind, repo, linked }, null: not a repo
     this.checked = {}; // where() -> when it was last looked at
@@ -877,8 +877,8 @@ export default class Spaces extends View {
       .border_color(on ? t.accent : t.border).bg(on ? t.accent : t.background)
       .when(on, (el) => el.child(svg("mods/workspace-chrome/check.svg").size(11).text_color(t.solid_foreground ?? t.background)));
     return v_flex().size_full().p(14).gap(4).bg(t.popover).text_size(13)
-      .child(div().font_semibold().text_color(t.foreground).child("Show in the sidebar"))
-      .child(div().text_size(11.5).text_color(t.dim).pb(6).child("Herdr Ranch. Untick what you don't want."))
+      .child(div().font_semibold().text_color(t.foreground).child("Ranch settings"))
+      .child(div().text_size(11.5).text_color(t.dim).pb(6).child("Untick what you don't want to see."))
       .children(rows.map(([key, label, note]) => {
         const on = !hidden(key);
         return h_flex().id(`show-${key}`).h(44).px(8).gap(10).items_center().rounded(8).cursor_pointer().hover((el) => el.bg(t.hover))
@@ -920,9 +920,6 @@ export default class Spaces extends View {
         .when(collapsed, el => el.pl(0).pr(0).justify_center())
         .when(!collapsed, el => el.child("Spaces"))
         .child(h_flex().gap(2).items_center()
-          .when(!collapsed, el => el.child(div().id("ranch-settings").size(26).flex_none().flex().items_center().justify_center().rounded(6).hover(s => s.bg(t.hover))
-            .on_click(() => openOverlay({ mod: "meadows", kind: "popup", width: 280, height: 290, props: { ranchSettings: true } }))
-            .child(svg("mods/flock/icons/ui-dots.svg").size(12).text_color(t.dim).flex_none())))
           .child(div().id("space-new").size(26).flex_none().flex().items_center().justify_center().rounded(6).hover(s => s.bg(t.hover).text_color(t.foreground))
           .on_click(() => run("space.new")).child(svg("mods/workspace-chrome/plus.svg").size(14)))))
       .child(v_flex().flex_1().min_h(0).px(collapsed ? 0 : 8).pb(14).overflow_y_scrollbar().mode("always").track_scroll(this.scroll)

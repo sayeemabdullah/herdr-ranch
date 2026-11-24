@@ -142,15 +142,15 @@ def update_pill(pen, x1, y, text="Update to v0.3.0"):
 
 
 def settings_picture(path, theme="dark", s=2):
-    """The "Show in the sidebar" popup."""
+    """The "Ranch settings" popup."""
     w, h = 280, 252
     pop = (92, 27, 80) if theme == "dark" else (222, 232, 200)
     img = Image.new("RGB", (round(w * s), round(h * s)), pop)
     pen = Pen(img, s, theme)
     c = pen.c
     pen.box(0.5, 0.5, w - 0.5, h - 0.5, 8, outline=c["border"])
-    pen.text(18, 14, "Show in the sidebar", 13, c["fg"], "Semibold")
-    pen.text(18, 34, "Herdr Ranch. Untick what you don't want.", 11.5, c["dim"])
+    pen.text(18, 14, "Ranch settings", 13, c["fg"], "Semibold")
+    pen.text(18, 34, "Untick what you don't want to see.", 11.5, c["dim"])
     rows = [("Reviewer", "Scout and the PR panel's space", True), ("Servers", "dev servers running in your spaces", True),
             ("Worktrees", "each repo's worktrees", False), ("Version and update button", "bottom right of the window", True)]
     y = 62
@@ -261,7 +261,8 @@ def patch_screenshot(path, theme):
     pen.server_card(7, 220, 300, 5173, "vite", "web-app \u00b7 41m", "cat")
     # the Update button as it looks when a newer release is out, left of CPU in the status bar
     bar = img.getpixel((round(1030 * s), round(996 * s)))
-    ImageDraw.Draw(img).rectangle((round(1030 * s), round(985 * s), round(1172 * s), round(1005 * s)), fill=bar)
+    ImageDraw.Draw(img).rectangle((round(1000 * s), round(985 * s), round(1172 * s), round(1005 * s)), fill=bar)
+    pen.paste(icon("ui-dots", 13 * s, pen.light), 1012, 990)
     update_pill(pen, 1170, 987)
     img.save(path)
 
