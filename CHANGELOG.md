@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- **The `ranch` command.** Type `ranch` in any terminal to open VS Code there, through [terminal-code](https://github.com/zenbu-labs/terminal-code): `ranch`, `ranch <path>`, `ranch review` (what changed) and `ranch diff a b`; everything else goes to `tode`. Install it with `./install.sh --cli` (or `--cli-only`); it never replaces a different `ranch` and never installs terminal-code for you.
+- **The `ranch` command.** Type `ranch` in any terminal to open VS Code there, through [terminal-code](https://github.com/zenbu-labs/terminal-code): `ranch`, `ranch <path>`, `ranch review` (what changed) and `ranch diff a b`; everything else goes to `tode`. Install it with `./install.sh --cli` (or `--cli-only`); it never replaces a different `ranch`. If terminal-code is missing, `ranch` asks before running its official installer (`ranch install` does it directly); nothing is installed without a yes.
 - **Terminals section.** Under Reviewer, your plain terminals (dev servers, tests, shells) are listed with their program, folder and space, with a dot while something is running; click one to jump to its pane. Agents and the PR Panel are not listed.
 
 ## 0.1.0

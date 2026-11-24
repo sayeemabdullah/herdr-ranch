@@ -117,10 +117,11 @@ ranch                  # open the current folder
 ranch src/app.js       # open a file
 ranch review           # the source control view: what an agent changed
 ranch diff a.txt b.txt # compare two files
+ranch install          # install terminal-code if it is missing
 ranch -g app.js:40:2   # anything else goes to tode: open at line 40, column 2
 ```
 
-`ranch review` pairs with the `✎ 3 files +120 −30` line on a finished card: when an agent is done, go to its folder and read the change. Install the command with `./install.sh --cli` (or `--cli-only` without the layout). It goes to `~/.local/bin` (set `RANCH_BIN_DIR` to change that) and never replaces a different command called `ranch`. You also need terminal-code itself: `curl -fsSL https://tode.sh/install | bash`. Without it, `ranch` says so and does nothing else.
+`ranch review` pairs with the `✎ 3 files +120 −30` line on a finished card: when an agent is done, go to its folder and read the change. Install the command with `./install.sh --cli` (or `--cli-only` without the layout). It goes to `~/.local/bin` (set `RANCH_BIN_DIR` to change that) and never replaces a different command called `ranch`. `ranch` needs terminal-code itself. If it is missing, the first `ranch` asks "Install it now with its official installer (`curl -fsSL https://tode.sh/install | bash`)? [y/N]", and nothing is installed unless you answer yes. `ranch install` does it directly, and `RANCH_INSTALL_TODE=yes` or `no` answers for scripts. Without a yes, `ranch` prints the install line and stops.
 
 ### Space emblems
 
@@ -229,7 +230,7 @@ These mods are trusted code. Before you install, know that:
 - `flock` also runs `hc send` once, to the agent you chose, only when you press **Send** in the Memory share window.
 - `flock-status` runs `ps`, `vm_stat`, `sysctl` and `df` (and `nproc` and `cat /proc/meminfo` on Linux) every 5 seconds for the meters.
 - `flock-toast` runs `terminal-notifier` or `osascript` (macOS) or `notify-send` (Linux) for system banners when the window is in the background, and plays the animal's sound with herdr's own `playSound`.
-- The `ranch` command (only if you install it with `--cli`) runs `tode`, terminal-code's command, when you type it, and nothing else. It does not install terminal-code for you; it prints the install line instead.
+- The `ranch` command (only if you install it with `--cli`) runs `tode`, terminal-code's command, when you type it, and nothing else. It installs terminal-code (by running its official installer, `curl -fsSL https://tode.sh/install | bash`) only after you answer yes, or run `ranch install`.
 - `ranch-chrome`, `ranch-tabs` and `ranch-pane` only draw: they read herdr's lists and the values the others publish.
 - **Nothing uses the network.**
 

@@ -87,3 +87,55 @@ test("install.sh rejects an unknown option and --help lists the options", () => 
   assert.equal(h.status, 0);
   assert.match(h.stdout, /--cli-only/);
 });
+
+// A stand-in `curl` that prints a tiny installer, which puts a stand-in tode in $HOME/.local/bin.
+const fakeInternet = () => {
+  const bin = mkdtempSync(join(tmpdir(), "ranch-net-"));
+  const home = mkdtempSync(join(tmpdir(), "ranch-home-"));
+  writeFileSync(join(bin, "curl"), `#!/bin/sh
+echo 'mkdir -p "$HOME/.local/bin"; printf "#!/bin/sh\\necho tode-ran:\\$*\\n" > "$HOME/.local/bin/tode"; chmod +x "$HOME/.local/bin/tode"; echo installer-ran'
+`);
+  chmodSync(join(bin, "curl"), 0o755);
+  return { bin, home };
+};
+const runNet = (args, { net, env = {} }) =>
+  spawnSync("bash", [RANCH, ...args], { encoding: "utf8", env: { PATH: `${net.bin}:/usr/bin:/bin`, HOME: net.home, ...env } });
+
+test("ranch install runs terminal-code's installer and says so first", () => {
+  const net = fakeInternet();
+  const r = runNet(["install"], { net });
+  assert.equal(r.status, 0, r.stderr);
+  assert.match(r.stdout + r.stderr, /curl -fsSL https:\/\/tode\.sh\/install \| bash/);
+  assert.match(r.stdout, /installer-ran/);
+  assert.ok(existsSync(join(net.home, ".local", "bin", "tode")));
+});
+
+test("ranch install does nothing when tode is already there", () => {
+  const net = fakeInternet();
+  const r = spawnSync("bash", [RANCH, "install"], { encoding: "utf8", env: { PATH: `${stub}:${net.bin}:/usr/bin:/bin`, HOME: net.home } });
+  assert.equal(r.status, 0);
+  assert.match(r.stdout, /already installed/);
+  assert.doesNotMatch(r.stdout, /installer-ran/);
+});
+
+test("with RANCH_INSTALL_TODE=yes, a missing tode is installed and then the command goes ahead", () => {
+  const net = fakeInternet();
+  const r = runNet(["src"], { net, env: { RANCH_INSTALL_TODE: "yes" } });
+  assert.equal(r.status, 0, r.stderr);
+  assert.match(r.stdout, /installer-ran/);
+  assert.match(r.stdout, /tode-ran:src/);
+});
+
+test("without a terminal to ask on, and no yes, it only prints the install line", () => {
+  const net = fakeInternet();
+  const r = runNet(["src"], { net });
+  assert.equal(r.status, 127);
+  assert.doesNotMatch(r.stdout, /installer-ran/);
+  assert.equal(existsSync(join(net.home, ".local", "bin", "tode")), false);
+  const no = runNet(["src"], { net, env: { RANCH_INSTALL_TODE: "no" } });
+  assert.equal(no.status, 127);
+});
+
+test("--help mentions ranch install", () => {
+  assert.match(run(["--help"]).stdout, /ranch install/);
+});

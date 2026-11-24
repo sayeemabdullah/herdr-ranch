@@ -42,7 +42,7 @@ install_cli() {
   chmod +x "$target"
   echo "Installed the ranch command: $target"
   case ":$PATH:" in *":$dir:"*) ;; *) echo "  $dir is not on your PATH yet; add it to use \`ranch\`." ;; esac
-  command -v tode >/dev/null 2>&1 || echo "  It needs terminal-code (the tode command): curl -fsSL https://tode.sh/install | bash"
+  command -v tode >/dev/null 2>&1 || echo "  It needs terminal-code (the tode command). Run \`ranch install\`, or the first \`ranch\` will ask to install it."
 }
 
 if [ "$CLI_ONLY" = 1 ]; then install_cli; exit 0; fi

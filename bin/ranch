@@ -16,8 +16,10 @@ ranch: open VS Code in this terminal (through terminal-code).
   ranch review [folder]    open the source control view: what changed
   ranch diff <a> <b>       compare two files
   ranch <tode options>     anything else goes to tode: -g file:line:col, --split right, --ssh user@host ...
+  ranch install            install terminal-code (the `tode` command) with its official installer
 
-Needs terminal-code (the `tode` command). Not installed yet? See https://github.com/zenbu-labs/terminal-code
+Needs terminal-code. If it is missing, ranch asks before installing it; nothing is installed without a yes.
+More: https://github.com/zenbu-labs/terminal-code
 TXT
 }
 
@@ -25,13 +27,43 @@ case "${1:-}" in
   -h|--help|help) usage; exit 0 ;;
 esac
 
-if ! command -v tode >/dev/null 2>&1; then
+# Runs terminal-code's own installer, only because you asked (ranch install, or a yes). Nothing else is installed.
+install_tode() {
+  echo "Installing terminal-code with its official installer: $INSTALL_HINT"
+  if ! { set -o pipefail; curl -fsSL https://tode.sh/install | bash; }; then
+    echo "ranch: the terminal-code installer failed. Try it yourself: $INSTALL_HINT" >&2
+    return 1
+  fi
+  # Its installer may put tode in ~/.local/bin, which this shell may not have on its PATH yet.
+  PATH="$HOME/.local/bin:$PATH"
+  command -v tode >/dev/null 2>&1
+}
+
+missing_hint() {
   {
     echo "ranch: terminal-code (the 'tode' command) is not installed."
-    echo "Install it with:  $INSTALL_HINT"
+    echo "Install it with:  ranch install    (or: $INSTALL_HINT)"
     echo "More: https://github.com/zenbu-labs/terminal-code"
   } >&2
-  exit 127
+}
+
+if [ "${1:-}" = install ]; then
+  if command -v tode >/dev/null 2>&1; then echo "terminal-code is already installed: $(command -v tode)"; exit 0; fi
+  install_tode && { echo "terminal-code is installed. Try: ranch"; exit 0; }
+  exit 1
+fi
+
+if ! command -v tode >/dev/null 2>&1; then
+  # Ask first: RANCH_INSTALL_TODE=yes or no answers for scripts; a person at a terminal is asked.
+  answer="${RANCH_INSTALL_TODE:-}"
+  if [ -z "$answer" ] && [ -t 0 ] && [ -t 2 ]; then
+    printf "ranch: terminal-code (the 'tode' command) is not installed.\nInstall it now with its official installer (%s)? [y/N] " "$INSTALL_HINT" >&2
+    read -r answer || answer=no
+  fi
+  case "$answer" in
+    y|Y|yes|YES|Yes) install_tode || exit 127 ;;
+    *) missing_hint; exit 127 ;;
+  esac
 fi
 
 case "${1:-}" in
