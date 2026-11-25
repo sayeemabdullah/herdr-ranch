@@ -81,7 +81,7 @@ Looking at an animal (focusing its pane) resets it to "Resting". Sub-agents show
 <p align="center"><img src="assets/ranch-settings.png" alt="The Ranch settings popup: four ticked or unticked boxes for Reviewer, Servers, Worktrees, and the version and update button" width="280"><br><sub>The sidebar settings. Drawn from the real colours; the names are made up.</sub></p>
 
 - **Ranch board.** Tasks done today, work time and spend, an apple tree that grows with your day (stages at 1, 4, 8, 13, 19 and 26 tasks, blossoms at 30, droops while someone has waited on you for over 5 minutes), and a gauge for the lowest 5-hour quota left.
-- **Agent cards.** The animal, its name (click to rename), its state, the model and cost, the space, the tab title, an **HP** bar (context used, green then yellow then red) and an **SP** bar (5-hour quota left), and after a task what it changed.
+- **Agent cards.** Every card is one size, the same as a server card. First line: the animal, its name (click to rename) and its state. Second line: the space, the model, the cost and the tab title, or, after a task, what it changed. An **HP** bar (context used, green then yellow then red) and an **SP** bar (5-hour quota left) are two thin lines along the bottom; hover a card for the numbers and the full title.
 - **Needs-you bell.** Rings with a red count in the Agents header. Click it for every waiting animal across all spaces, longest wait first; click a row to jump to that agent.
 - **Find.** The magnifier filters animals by name, animal, space, program or state; Enter jumps to the first match.
 
