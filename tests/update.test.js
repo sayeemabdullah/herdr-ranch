@@ -36,6 +36,8 @@ test("the update script only ever contains a checked version", () => {
   assert.match(script, /archive\/refs\/tags\/v0\.2\.0\.tar\.gz/);
   assert.match(script, /cd "herdr-ranch-0\.2\.0"/);
   assert.match(script, /\.\/install\.sh/);
+  assert.doesNotMatch(script, /read _/);
+  assert.match(updateScript("v0.2.0", { wait: true }), /Press enter to close\.".*read _/);
   assert.throws(() => updateScript('v0.2.0"; rm -rf ~; "'));
   assert.throws(() => updateScript("main"));
 });

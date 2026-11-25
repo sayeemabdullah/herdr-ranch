@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- **Update button fixed.** It tried to open a terminal tab in the selected space, which fails (`tab.new failed: cannot start a terminal`) when that space is on another machine. It now updates in the background on this computer, with toasts for "updating", "now vX.Y.Z" and any error.
+
 ## 0.2.1
 
 A calmer sidebar, a fixed and restyled worktree dialog, and Ranch settings.
