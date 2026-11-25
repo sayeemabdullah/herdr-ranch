@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **Agent cards are one size, like the server cards** (50px): the animal, its name and state on the first line; the space, model, cost and tab title (or what a task changed) on the second; HP and SP as two thin bars along the bottom, with the numbers on hover.
+- **The Ranch Dusk picture is the real dark screenshot again** (`assets/preview-dusk.png` had been replaced by the banner by mistake), and the window pictures show the new agent cards.
 - **Update button fixed.** It tried to open a terminal tab in the selected space, which fails (`tab.new failed: cannot start a terminal`) when that space is on another machine. It now updates in the background on this computer, with toasts for "updating", "now vX.Y.Z" and any error.
 
 ## 0.2.1

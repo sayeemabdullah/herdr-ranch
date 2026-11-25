@@ -107,8 +107,8 @@ const dayKey = () => new Date().toISOString().slice(0, 10);
 const CTX_WARN = 50;
 const CTX_DANGER = 80;
 const CTX_BAR_HEIGHT = 3;
-const CARD_LINE_HEIGHT = 17;
-const CARD_PADDING_Y = 14;
+// Every agent card is this tall; the Servers cards (meadows) match.
+const CARD_HEIGHT = 50;
 const STEP_PERIOD = 800;
 // Loops only ease; swinging far past 0..1 makes the opacity cross over in about one frame, a crisp swap.
 const SWAP_LOW = -6;
@@ -291,6 +291,10 @@ export default class Agents extends View {
       .child(div().flex_1().h(CTX_BAR_HEIGHT).rounded(2).bg(t.border)
         .child(div().h_full().w(`${pct}%`).rounded(2).bg(color)))
       .child(div().w(48).flex_none().text_size(10).text_color(t.dim).child(text));
+  }
+
+  miniBar(t, pct, color) {
+    return div().flex_1().h(3).rounded(2).bg(t.border).child(div().h_full().w(`${pct}%`).rounded(2).bg(color));
   }
 
   // Start counting spend from now: what each session has cost so far becomes its zero.
@@ -889,11 +893,16 @@ export default class Agents extends View {
       const kidsList = subs.map((x) => kidStatus(x.t, this.listed));
       const made = this.summary[a.address];
       const change = made && a.status !== "working" && now - made.at < SUMMARY_FRESH ? made.text : null;
-      const lineCount = [hero, stat?.model, place, session, hasCtx, hasQuota, change].filter(Boolean).length;
+      // One size for every card (the Servers cards are the same): a title line, a detail line, two thin bars under them.
+      const title = hero ? names[a.address] ?? titleCase(hero) : place || session || label(a);
+      const detailParts = change ? [] : [hero ? place : null, stat?.model, stat?.cost != null ? `$${stat.cost.toFixed(2)}` : null, hero ? session : place ? session : null].filter(Boolean);
+      const line2 = change ? `\u270e ${change}` : detailParts.join(" \u00b7 ");
+      const hint = [hero ? names[a.address] ?? titleCase(hero) : null, place, session, stat?.model, hasCtx ? `HP ${stat.ctx}%` : null, hasQuota ? `SP ${Math.max(0, 100 - stat.quota)}% left` : null].filter(Boolean).join(" \u00b7 ");
       return h_flex()
         .id(`ag-${a.address}`)
         .px(8)
-        .h(CARD_PADDING_Y + Math.max(lineCount * CARD_LINE_HEIGHT, SPRITE_SIZE))
+        .h(CARD_HEIGHT)
+        .relative()
         .my(2)
         .flex_none()
         .rounded(8)
@@ -910,32 +919,31 @@ export default class Agents extends View {
           cx.notify();
         })
         .on_click(() => run("pane.focus", { pane: a.pane }))
+        .when(Boolean(hint), (el) => el.tooltip(hint))
         .when(Boolean(sprite), el => el.child(div().id(`agent-fold-${a.address}`)
           .when(subs.length > 0, el => el.on_click((_e, cx) => {
             cx.stop_propagation();
             this.folded.has(a.address) ? this.folded.delete(a.address) : this.folded.add(a.address);
             cx.notify();
           })).child(sprite)))
-        .child(v_flex().flex_1().min_w(0).gap(1)
-          .when(Boolean(hero), el => el.child(h_flex().min_w(0).gap(6).items_center()
+        .child(v_flex().flex_1().min_w(0).gap(2).pb(hasCtx || hasQuota ? 5 : 0)
+          .child(h_flex().min_w(0).gap(6).items_center()
             .child(div().id(`name-${a.address}`).min_w(0).truncate().font_semibold().text_color(t.foreground)
-              .cursor_pointer().hover((s) => s.text_color(t.accent)).tooltip("Click to rename")
-              .on_click((_e, cx) => {
-                cx.stop_propagation();
-                openOverlay({ mod: "flock", kind: "popup", width: 320, height: 175, props: { rename: a.address, value: names[a.address] ?? "", animal: hero } });
-              })
-              .child(names[a.address] ?? titleCase(hero ?? "")))
-            .child(div().flex_1().min_w(0).truncate().text_size(11).text_color(life === "alarm" ? t.blocked : t.dim).child(moodOf(a.status, life)))
+              .when(Boolean(hero), (el) => el.cursor_pointer().hover((s) => s.text_color(t.accent)).tooltip("Click to rename")
+                .on_click((_e, cx) => {
+                  cx.stop_propagation();
+                  openOverlay({ mod: "flock", kind: "popup", width: 320, height: 175, props: { rename: a.address, value: names[a.address] ?? "", animal: hero } });
+                }))
+              .child(title))
+            .when(Boolean(hero), (el) => el.child(div().flex_1().min_w(0).truncate().text_size(11).text_color(life === "alarm" ? t.blocked : t.dim).child(moodOf(a.status, life))))
             .when(life === "alarm", (d) => d.child(alarmClock()))
             .when(kidsList.length > 0 && Boolean(hero), (d) => d.child(this.babies(variants[a.address] ? `${hero}-alt` : hero, kidsList)))
-            .when(a.status === "working", (d) => d.child(workingDots(t)))))
-          .child(v_flex().min_w(0).gap(1).text_size(hero ? 11.5 : 13)
-            .when(Boolean(stat?.model), el => el.child(div().min_w(0).truncate().text_color(idle || hero ? t.muted : t.foreground).child(stat.cost != null ? `${stat.model} · $${stat.cost.toFixed(2)}` : stat.model)))
-            .when(Boolean(place), el => el.child(div().min_w(0).truncate().font_semibold().text_color(t.foreground).child(place)))
-            .when(Boolean(session), el => el.child(div().min_w(0).truncate().text_color(t.dim).child(session)))
-            .when(Boolean(change), el => el.child(div().min_w(0).truncate().text_color(t.accent).child(`✎ ${change}`))))
-          .when(hasCtx, el => el.child(this.ctxBar(t, stat.ctx)))
-          .when(hasQuota, el => el.child(this.spBar(t, stat.quota))))
+            .when(a.status === "working", (d) => d.child(workingDots(t))))
+          .when(Boolean(line2), el => el.child(div().min_w(0).truncate().text_size(11.5).text_color(change ? t.accent : idle || hero ? t.muted : t.dim).child(line2))))
+        // HP (context used) and SP (5-hour quota left): two thin bars along the bottom, hover for the numbers.
+        .when(hasCtx || hasQuota, el => el.child(h_flex().absolute().left(SPRITE_SIZE + 20).right(10).bottom(5).gap(6)
+          .when(hasCtx, (b) => b.child(this.miniBar(t, stat.ctx, stat.ctx >= CTX_DANGER ? t.blocked : stat.ctx >= CTX_WARN ? t.done : t.working)))
+          .when(hasQuota, (b) => b.child(this.miniBar(t, Math.max(0, 100 - stat.quota), 100 - stat.quota <= 10 ? t.blocked : 100 - stat.quota <= 30 ? t.done : t.accent)))))
         .when(Boolean(machine), el => el.child(div().text_size(10).text_color(t.dim).child(machine)))
         .when(subs.length > 0, el => el.child(fold(a, subs)))
         .when(this.hovered === a.address && Boolean(hero) && list.length > 1, el => el.child(div().id(`handoff-${a.address}`)

@@ -779,7 +779,7 @@ export default class Spaces extends View {
   serversSection(t) {
     const critters = this.critters();
     const folded = this.sectionsFolded.has("servers");
-    const card = (id, red) => h_flex().id(id).mx(8).my(2).px(8).h(44).gap(9).items_center().rounded(8).border(1).border_color(red ? t.blocked : t.border);
+    const card = (id, red) => h_flex().id(id).mx(8).my(2).px(8).h(50).gap(9).items_center().rounded(8).border(1).border_color(red ? t.blocked : t.border);
     const goneRows = this.gone.map((g) => card(`gone-${g.pid}`, true)
       .child(critterPicture(critters[g.port] ?? CRITTERS[0], "gone"))
       .child(v_flex().flex_1().min_w(0)
