@@ -178,7 +178,7 @@ The right end of the status bar (bottom of the window) shows the installed versi
 
 <p align="center"><img src="assets/update-button.png" alt="The status bar with the gold Update to v0.3.0 button with an up arrow, left of the CPU, RAM and Disk meters" width="720"></p>
 
-Click it. Click it: a tab named "Update Ranch" opens, downloads that release and runs its installer, and you watch it. The check looks at GitHub's latest release a few seconds after start and then every 6 hours, and sends nothing about you. It needs the version file the installer writes (`herdr-ranch.version` in herdr's folder), so a copy installed before the button existed gets the button after its next manual update.
+Click it. Click it: it downloads that release and runs its installer in the background, on this computer, and a toast tells you when it is done (or why it could not). The check looks at GitHub's latest release a few seconds after start and then every 6 hours, and sends nothing about you. It needs the version file the installer writes (`herdr-ranch.version` in herdr's folder), so a copy installed before the button existed gets the button after its next manual update.
 
 To update by hand, pull the repo and run the installer again:
 
@@ -265,7 +265,7 @@ python3 -m unittest discover -s tools
 | `mods/ranch-chrome`, `ranch-tabs`, `ranch-pane` | sign and footer, tab bar with the ranch strip, pane header |
 | `mods/ranch-worktree` | the New and Open worktree dialog, in the ranch style, with Delete (a copy of herdr's `worktree`) |
 | `tools/` | the pictures, the sounds and the demo GIF, with their tests |
-| `assets/` | `demo.gif`, `memory-share.png`, `servers-worktrees.png`, `ranch-settings.png`, `worktree-dialog.png`, `toasts.png`, `update-tab.png`, `update-button.png`, `preview-dusk.png` |
+| `assets/` | `demo.gif`, `memory-share.png`, `servers-worktrees.png`, `ranch-settings.png`, `worktree-dialog.png`, `toasts.png`, `update-toasts.png`, `update-button.png`, `preview-dusk.png` |
 | `VERSION` | the release number the Update button compares with |
 
 [RECIPE.md](RECIPE.md) is the full brief the layout can be rebuilt from (the format herdr.dev's gallery uses). See [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request: changes go through PRs with Conventional Commit titles, never straight to `master`.

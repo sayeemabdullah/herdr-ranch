@@ -231,22 +231,19 @@ def toasts_picture(path, theme="dark", s=2):
     img.save(path)
 
 
-def update_tab_picture(path, s=2):
-    """The tab the Update button opens, a few lines in."""
-    w, h = 560, 214
-    img = Image.new("RGB", (round(w * s), round(h * s)), (42, 6, 38))
-    pen = Pen(img, s, "dark")
+def update_toasts_picture(path, theme="dark", s=2):
+    """The toasts the Update button shows: updating, then done."""
+    w, h = 400, 160
+    bg = (63, 15, 56) if theme == "dark" else (188, 201, 157)
+    pop = (92, 27, 80) if theme == "dark" else (222, 232, 200)
+    img = Image.new("RGB", (round(w * s), round(h * s)), bg)
+    pen = Pen(img, s, theme)
     c = pen.c
-    pen.box(14, 12, 136, 36, 6, fill=(69, 9, 58), outline=c["gold"], width=1.5)
-    pen.text(26, 17, "Update Ranch", 12, c["gold"], "Semibold")
-    mono = ImageFont.truetype("/System/Library/Fonts/Menlo.ttc", round(11.5 * s))
-    lines = [("Downloading Herdr Ranch v0.3.0...", c["fg"]), ("Installing into /Users/you/.config/herdr-app", c["fg"]),
-             ("  moved the old mods/flock to backups/herdr-ranch-20270102-0930/", c["dim"]),
-             ("check passed: mods/flock", c["green"]), ("check passed: mods/meadows", c["green"]), ("check passed: mods/ranch-worktree", c["green"]),
-             ("Done. ctrl-shift-l switches layouts.", c["fg"]), ("", c["fg"]),
-             ("Herdr Ranch is now v0.3.0. Press enter to close.", c["gold"])]
-    for i, (text, colour) in enumerate(lines):
-        pen.d.text((16 * s, (50 + i * 17) * s), text, font=mono, fill=tuple(colour))
+    for y, title, body in ((10, "Updating Herdr Ranch to v0.3.0\u2026", "A few seconds. herdr reloads the mods by itself."),
+                           (86, "Herdr Ranch is now v0.3.0", "Updated. Everything has reloaded.")):
+        pen.box(10, y, w - 10, y + 64, 10, fill=pop, outline=c["border"])
+        pen.text(22, y + 12, title, 12.5, c["fg"], "Semibold")
+        pen.text(22, y + 34, body, 11, c["muted"])
     img.save(path)
 
 
@@ -293,7 +290,7 @@ def main():
     settings_picture(os.path.join(ROOT, "assets", "ranch-settings.png"))
     dialog_picture(os.path.join(ROOT, "assets", "worktree-dialog.png"))
     toasts_picture(os.path.join(ROOT, "assets", "toasts.png"))
-    update_tab_picture(os.path.join(ROOT, "assets", "update-tab.png"))
+    update_toasts_picture(os.path.join(ROOT, "assets", "update-toasts.png"))
     # the status bar with the Update button, for the README
     bar = Image.open(os.path.join(ROOT, "layouts", "Herdr-Ranch.png")).convert("RGB")
     bar.crop((560, 972, 1600, 1006)).resize((2080, 68), Image.LANCZOS).save(os.path.join(ROOT, "assets", "update-button.png"))

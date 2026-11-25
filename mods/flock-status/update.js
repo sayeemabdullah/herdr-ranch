@@ -30,10 +30,11 @@ export function parseRelease(json) {
 }
 
 /**
- * The shell script the Update tab runs: download that release's source, run its install.sh, wait for enter.
+ * The shell script that updates: download that release's source and run its install.sh. With `wait`, it ends by
+ * waiting for enter (for a terminal tab); without it, it just ends (it runs in the background).
  * The tag is checked first, so nothing but digits and dots reaches the command.
  */
-export function updateScript(tag) {
+export function updateScript(tag, { wait = false } = {}) {
   const v = parseVersion(tag);
   if (!v) throw new Error(`not a release tag: ${tag}`);
   const version = v.join(".");
@@ -46,6 +47,6 @@ export function updateScript(tag) {
     "tar -xzf ranch.tar.gz",
     `cd "herdr-ranch-${version}"`,
     "./install.sh",
-    `echo; echo "Herdr Ranch is now v${version}. Press enter to close."; read _`,
+    ...(wait ? [`echo; echo "Herdr Ranch is now v${version}. Press enter to close."; read _`] : []),
   ].join("; ");
 }

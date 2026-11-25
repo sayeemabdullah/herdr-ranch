@@ -58,16 +58,41 @@ export default class WorkspaceStatus extends View {
       // No version file (installed before updates existed): nothing to compare, so no button until the next install.
       const next = found && local && isNewer(local, found.version) ? found : null;
       const version = local ? local.trim() : null;
+      let was = null;
+      try { was = localStorage.getItem("ranch.updating"); } catch { /* ignore */ }
+      if (was && version && `v${version}` === was) {
+        try { localStorage.removeItem("ranch.updating"); localStorage.removeItem("ranch.update.found"); } catch { /* ignore */ }
+        notify({ title: `Herdr Ranch is now ${was}`, body: "Updated. Everything has reloaded.", level: "success" });
+      }
       if (version !== this.version) { this.version = version; cx.notify(); }
       if (now && !next) notify({ title: version ? `Herdr Ranch v${version} is up to date` : "Herdr Ranch: could not tell the installed version", level: "info" });
       if (JSON.stringify(next) !== JSON.stringify(this.update)) { this.update = next; cx.notify(); }
     } catch { /* offline: try again later */ }
   }
 
-  // Opens a tab that downloads the release and runs its installer, so you watch it happen.
-  runUpdate() {
-    if (!this.update) return;
-    run("tab.new", { name: "Update Ranch", folder: home(), argv: ["/bin/sh", "-c", updateScript(this.update.tag)] });
+  // Downloads the release and runs its installer in the background, on this computer, with toasts for the news.
+  // (A terminal tab would open in whichever space is selected, which can be on another machine; and the install
+  // replaces this very mod, so the "done" toast is shown after the reload, from checkUpdate.)
+  async runUpdate(cx) {
+    if (!this.update || this.updating) return;
+    const tag = this.update.tag;
+    this.updating = true;
+    cx.notify();
+    try { localStorage.setItem("ranch.updating", tag); } catch { /* ignore */ }
+    notify({ title: `Updating Herdr Ranch to ${tag}\u2026`, body: "A few seconds. herdr reloads the mods by itself.", level: "info" });
+    try {
+      const r = await exec("sh", ["-c", updateScript(tag)], { timeout: 240000 });
+      if (r.code !== 0) {
+        const last = `${r.stderr}\n${r.stdout}`.trim().split("\n").filter(Boolean).pop() ?? "the installer stopped";
+        try { localStorage.removeItem("ranch.updating"); } catch { /* ignore */ }
+        notify({ title: "Herdr Ranch could not update", body: `${last.slice(0, 160)}. Try \`git pull && ./install.sh\` in your clone.`, level: "error" });
+      }
+    } catch (error) {
+      try { localStorage.removeItem("ranch.updating"); } catch { /* ignore */ }
+      notify({ title: "Herdr Ranch could not update", body: String(error).slice(0, 160), level: "error" });
+    }
+    this.updating = false;
+    cx.notify();
   }
 
   // CPU, memory and disk of this computer. Cores and total memory are read once.
@@ -151,8 +176,8 @@ export default class WorkspaceStatus extends View {
       .child(div().flex_1())
       .when(Boolean(this.update) && (shared("ranch.hide") ?? {}).update !== true, el => el.child(h_flex().id("ranch-update").px(8).h(20).gap(5).items_center().flex_none().rounded(5)
         .bg(t.solid ?? "#f2c744").text_color(t.solid_foreground ?? "#33062b").text_size(11.5).font_semibold()
-        .cursor_pointer().hover(s => s.opacity(0.9)).on_click(() => this.runUpdate())
-        .child(svg("mods/flock/icons/ui-up.svg").size(11).text_color(t.solid_foreground ?? "#33062b").flex_none()).child(`Update to ${this.update.tag}`)))
+        .cursor_pointer().hover(s => s.opacity(0.9)).on_click((_e, cx) => this.runUpdate(cx))
+        .child(svg("mods/flock/icons/ui-up.svg").size(11).text_color(t.solid_foreground ?? "#33062b").flex_none()).child(this.updating ? "Updating\u2026" : `Update to ${this.update.tag}`)))
       // Always there, even when the version is hidden: it is how the version and the sections come back.
       .child(div().id("ranch-settings").size(20).flex_none().flex().items_center().justify_center().rounded(5).cursor_pointer()
         .hover(s => s.bg(t.hover)).on_click(() => openOverlay({ mod: "meadows", kind: "popup", width: 280, height: 290, props: { ranchSettings: true } }))
