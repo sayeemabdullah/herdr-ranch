@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.6.1
 
 - **Ranch Chat scrolls to what you send and to each new message.** Sending used to leave your message hidden below the fold (the scroll call was one this view does not have, and its error was swallowed); the view now brings the newest message, or the "typing…" row, into sight, and follows each reply message as it arrives. New messages fade in and rise into place, and "typing…" pulses.
 
