@@ -15,7 +15,7 @@
 
 <br>
 
-<img src="preview.png" alt="Herdr Ranch: every coding agent is a tiny pixel animal. The window with spaces, the Reviewer section with Scout and the ranch board, and the twelve animals on a fence" width="900">
+<img src="preview.png" alt="Herdr Ranch: every coding agent is a tiny pixel animal. Six features including Ranch Chat, the window with spaces, the Reviewer section with Scout and the ranch board, and the twelve animals on a fence" width="900">
 
 <br>
 
