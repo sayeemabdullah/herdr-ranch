@@ -145,6 +145,15 @@ export default class WorkspaceStatus extends View {
     return key ? `${key}  commands` : "commands";
   }
 
+  // Click "needs you": focus the next waiting agent, one after another, wrapping around.
+  jumpToWaiting(cx) {
+    const waiting = agents().filter((a) => a.status === WAITING_STATUS);
+    if (!waiting.length) return;
+    this.lastJump = this.lastJump == null || this.lastJump >= waiting.length - 1 ? 0 : this.lastJump + 1;
+    run("pane.focus", { pane: waiting[this.lastJump].pane });
+    cx.notify();
+  }
+
   showWaitingOnDock(waiting) {
     if (checking()) return;
     const badge = waiting > 0 ? String(waiting) : null;
@@ -168,7 +177,11 @@ export default class WorkspaceStatus extends View {
       .when(Boolean(space?.branch), el => el.child(label("branch", space.branch)))
       .children(QUEST.map(([status, words]) => [status, words, list.filter(a => a.status === status).length])
         .filter(([, , count]) => count > 0)
-        .map(([status, words, count]) => h_flex().gap(6).items_center().px(6).py(1).rounded(3).border(1).border_color(t.border)
+        .map(([status, words, count]) => h_flex().id(`quest-${status}`).gap(6).items_center().px(6).py(1).rounded(3).border(1)
+          .border_color(status === "blocked" ? t.blocked : t.border)
+          .when(status === "blocked", (el) => el.bg(t.blocked + "1f").font_semibold().cursor_pointer().hover((s) => s.bg(t.blocked + "33"))
+            .tooltip("Jump to the next agent that needs you")
+            .on_click((_e, cx) => this.jumpToWaiting(cx)))
           .child(div().size(6).rounded(3).bg(t[status] ?? t.dim))
           .text_color(status === "blocked" ? t.blocked : t.muted)
           .child(`${count} ${words}`)))
@@ -180,7 +193,7 @@ export default class WorkspaceStatus extends View {
         .child(svg("mods/flock/icons/ui-up.svg").size(11).text_color(t.solid_foreground ?? "#33062b").flex_none()).child(this.updating ? "Updating\u2026" : `Update to ${this.update.tag}`)))
       // Always there, even when the version is hidden: it is how the version and the sections come back.
       .child(div().id("ranch-settings").size(20).flex_none().flex().items_center().justify_center().rounded(5).cursor_pointer()
-        .hover(s => s.bg(t.hover)).on_click(() => openOverlay({ mod: "meadows", kind: "popup", width: 280, height: 290, props: { ranchSettings: true } }))
+        .hover(s => s.bg(t.hover)).on_click(() => openOverlay({ mod: "meadows", kind: "popup", width: 280, height: 410, props: { ranchSettings: true } }))
         .child(svg("mods/flock/icons/ui-dots.svg").size(13).text_color(t.dim)))
       .when(!this.update && Boolean(this.version) && (shared("ranch.hide") ?? {}).update !== true, el => el.child(div().id("ranch-version").text_size(11).text_color(t.dim).cursor_pointer()
         .hover(s => s.text_color(t.foreground)).on_click((_e, cx) => this.checkUpdate(cx, true)).child(`Ranch v${this.version}`)))
