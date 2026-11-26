@@ -63,6 +63,7 @@ const CRITTERS = ["pig", "cat", "frog", "hedgehog"];
 const CRITTERS_KEY = "meadows.critters";
 // Sections the person can hide (the "..." button next to Spaces): shared state, so every window agrees.
 const HIDE_KEY = "ranch.hide";
+const LAYOUT_KEY = "ranch.layout";
 const hidden = (key) => (shared(HIDE_KEY) ?? {})[key] === true;
 const FOLD_KEY = "ranch.folded";
 // A shell that runs one command the way the person's own terminal would (their PATH), on macOS and Linux.
@@ -713,14 +714,16 @@ export default class Spaces extends View {
     return v_flex().flex_none().pb(4).mx(-8)
       .child(this.sectionHeader(t, "reviewer", "Reviewer", null))
       .children(this.sectionsFolded.has("reviewer") ? [] : this.reviewers.map(({ w }) => h_flex().id(`reviewer-${w.id}`).mx(8).my(2).px(8).h(50).gap(10).items_center().rounded(8)
-        .border(1).border_color(w.active ? t.input : t.border)
+        .border(1).border_color(w.status === "working" ? t.working : w.active ? t.input : t.border)
         .when(w.active, (el) => el.bg(t.selected))
+        // While Scout reviews, the card lights up: a coloured edge and tint, the busy poses, and "Reviewing" in the colour of work.
+        .when(w.status === "working" && !w.active, (el) => el.bg(t.working + "1a"))
         .cursor_pointer().hover((el) => el.bg(t.hover))
         .on_click(() => run("space.select", { id: w.id }))
         .child(picture(w.status))
         .child(v_flex().flex_1().min_w(0)
           .child(div().truncate().font_semibold().text_color(t.foreground).child("Scout"))
-          .child(div().truncate().text_size(11).text_color(w.status === "blocked" ? t.blocked : t.dim).child(`${WORDS[w.status] ?? "Waiting for PRs"} · ${w.name}`)))
+          .child(div().truncate().text_size(11).text_color(w.status === "blocked" ? t.blocked : w.status === "working" ? t.working : t.dim).child(`${WORDS[w.status] ?? "Waiting for PRs"} · ${w.name}`)))
         .child(div().text_color(tone(t, w.status)).child(glyph(w.status)))));
   }
 
@@ -871,8 +874,10 @@ export default class Spaces extends View {
       ["reviewer", "Reviewer", "Scout and the PR panel's space"],
       ["servers", "Servers", "dev servers running in your spaces"],
       ["worktrees", "Worktrees", "each repo's worktrees"],
+      ["board", "Ranch board", "the tree, tasks done today and spend"],
       ["update", "Version and update button", "bottom right of the window"],
     ];
+    const two = (shared(LAYOUT_KEY) ?? {}).columns === 2;
     const box = (on) => div().size(16).flex_none().flex().items_center().justify_center().rounded(4).border(1)
       .border_color(on ? t.accent : t.border).bg(on ? t.accent : t.background)
       .when(on, (el) => el.child(svg("mods/workspace-chrome/check.svg").size(11).text_color(t.solid_foreground ?? t.background)));
@@ -886,6 +891,11 @@ export default class Spaces extends View {
           .child(box(on))
           .child(v_flex().flex_1().min_w(0).child(div().text_color(t.foreground).child(label)).child(div().truncate().text_size(11).text_color(t.dim).child(note)));
       }))
+      .child(div().h(1).mx(8).my(4).bg(t.border))
+      .child(h_flex().id("two-columns").h(44).px(8).gap(10).items_center().rounded(8).cursor_pointer().hover((el) => el.bg(t.hover))
+        .on_click((_e, cx) => { setShared(LAYOUT_KEY, { ...(shared(LAYOUT_KEY) ?? {}), columns: two ? 1 : 2 }); cx.notify(); })
+        .child(box(two))
+        .child(v_flex().flex_1().min_w(0).child(div().text_color(t.foreground).child("Two agents per row")).child(div().truncate().text_size(11).text_color(t.dim).child("smaller cards, side by side"))))
       .child(div().flex_1())
       .child(h_flex().justify_end().text_size(11).text_color(t.dim).child("esc close"));
   }

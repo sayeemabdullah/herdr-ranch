@@ -168,7 +168,7 @@ def update_pill(pen, x1, y, text="Update to v0.3.0"):
 
 def settings_picture(path, theme="dark", s=2):
     """The "Ranch settings" popup."""
-    w, h = 280, 252
+    w, h = 280, 372
     pop = (92, 27, 80) if theme == "dark" else (222, 232, 200)
     img = Image.new("RGB", (round(w * s), round(h * s)), pop)
     pen = Pen(img, s, theme)
@@ -177,7 +177,8 @@ def settings_picture(path, theme="dark", s=2):
     pen.text(18, 14, "Ranch settings", 13, c["fg"], "Semibold")
     pen.text(18, 34, "Untick what you don't want to see.", 11.5, c["dim"])
     rows = [("Reviewer", "Scout and the PR panel's space", True), ("Servers", "dev servers running in your spaces", True),
-            ("Worktrees", "each repo's worktrees", False), ("Version and update button", "bottom right of the window", True)]
+            ("Worktrees", "each repo's worktrees", False), ("Ranch board", "the tree, tasks done today and spend", True),
+            ("Version and update button", "bottom right of the window", True)]
     y = 62
     for label, note, on in rows:
         pen.box(18, y + 12, 34, y + 28, 4, fill=c["gold"] if on else None, outline=c["gold"] if on else c["border"])
@@ -186,6 +187,12 @@ def settings_picture(path, theme="dark", s=2):
         pen.text(46, y + 6, label, 13, c["fg"])
         pen.text(46, y + 24, note, 11, c["dim"])
         y += 44
+    pen.d.line([(round(26 * s), round((y + 4) * s)), (round((w - 26) * s), round((y + 4) * s))], fill=tuple(c["border"]), width=max(1, round(s)))
+    y += 8
+    label, note = "Two agents per row", "smaller cards, side by side"
+    pen.box(18, y + 12, 34, y + 28, 4, outline=c["border"])  # off until you tick it
+    pen.text(46, y + 6, label, 13, c["fg"])
+    pen.text(46, y + 24, note, 11, c["dim"])
     pen.text(w - 52, h - 22, "esc close", 11, c["dim"])
     img.save(path)
 

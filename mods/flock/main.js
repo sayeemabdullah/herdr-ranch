@@ -7,6 +7,7 @@ import { parseContext, parseModel, parseQuota, parseCost } from "./agent-stats.j
 import { watchAgent, parseShortstat, changeSince, formatChange } from "./watch.js";
 import { pickContext, buildHandoff, parseLines } from "./handoff.js";
 import { castAgents } from "./casting.js";
+import { STATES, filterByState, pairUp } from "./agentview.js";
 import { MINUTE, NAP_AFTER, ALARM_AFTER, TREE_AT, lifeOf, treeStage, worked, countsAsTask, needsRead, migrateCost } from "./ranch.js";
 
 function find(node, id) {
@@ -63,9 +64,15 @@ const kidStatus = (k, listed) => {
 };
 const SORTS = [
   { id: "priority", label: "Priority", icon: "clock" },
+  { id: "longest", label: "Waiting longest first", icon: "clock" },
   { id: "grouped", label: "Grouped by space", icon: "layers" },
 ];
 const sortOf = () => SORTS.find((s) => s.id === shared("agents.sort")) ?? SORTS[0];
+// Which state to show, and the two Ranch settings this mod reads (the popup is in meadows).
+const FILTER_KEY = "agents.filter";
+const filterOf = () => STATES.find((s) => s.id === shared(FILTER_KEY)) ?? STATES[0];
+const boardHidden = () => (shared("ranch.hide") ?? {}).board === true;
+const twoColumns = () => (shared("ranch.layout") ?? {}).columns === 2;
 const SECTION = { 4: "Needs you", 3: "Done", 2: "Working", 1: "Idle" };
 const SECTION_STATUS = { 4: "blocked", 3: "done", 2: "working" };
 
@@ -672,6 +679,7 @@ export default class Agents extends View {
 
   sortMenu(t) {
     const on = sortOf().id;
+    const shown = filterOf().id;
     return v_flex()
       .w_full()
       .p(5)
@@ -693,7 +701,25 @@ export default class Agents extends View {
         })
         .child(svg(`mods/workspace-chrome/${s.icon}.svg`).size(14).flex_none().text_color(t.muted))
         .child(div().flex_1().child(s.label))
-        .when(s.id === on, (el) => el.child(svg("mods/workspace-chrome/check.svg").size(14).flex_none().text_color(t.foreground)))));
+        .when(s.id === on, (el) => el.child(svg("mods/workspace-chrome/check.svg").size(14).flex_none().text_color(t.foreground)))))
+      .child(div().h(1).mx(8).my(5).bg(t.border))
+      .child(div().px(8).pt(2).pb(6).text_size(11).text_color(t.dim).child("Show"))
+      .children(STATES.map((s) => h_flex()
+        .id(`show-${s.id}`)
+        .h(29)
+        .px(8)
+        .gap(9)
+        .rounded(7)
+        .items_center()
+        .text_color(t.foreground)
+        .hover((el) => el.bg(t.hover))
+        .on_click(() => {
+          setShared(FILTER_KEY, s.id);
+          closeOverlay(props().overlay);
+        })
+        .child(div().size(7).flex_none().rounded(4).bg(t[s.id] ?? t.dim))
+        .child(div().flex_1().child(s.label))
+        .when(s.id === shown, (el) => el.child(svg("mods/workspace-chrome/check.svg").size(14).flex_none().text_color(t.foreground)))));
   }
 
   peek(addr) {
@@ -770,24 +796,28 @@ export default class Agents extends View {
     const tuckedAway = list.filter((a) => this.settled.has(a.address));
     const everyone = list;
     list = list.filter((a) => !this.settled.has(a.address));
+    const filter = filterOf();
+    list = filterByState(list, filter.id);
+    const twoCol = !collapsed && twoColumns();
     const { cast, names, variants } = castFor(everyone, all);
     // A kept sub-agent (one with a pane) is in agents() too: where a tree shows
     // it, it gets no row of its own, unless it's pinned.
-    const nested = new Set(collapsed ? [] : list.flatMap((a) => this.tree(all, a.address).map((s) => s.t.address)));
+    const nested = new Set(collapsed || twoCol ? [] : list.flatMap((a) => this.tree(all, a.address).map((s) => s.t.address)));
     list = list.filter((a) => a.pinned || !nested.has(a.address));
     const tabCounts = new Map();
     for (const a of list) tabCounts.set(a.tab, (tabCounts.get(a.tab) ?? 0) + 1);
-    const byPriority = sort.id === "priority";
+    const byPriority = sort.id !== "grouped";
     const urgency = new Map(list.map((a) => [a.address, Math.max(this.rank(a), ...this.tree(all, a.address).map((s) => RANK[kidStatus(s.t, this.listed)] ?? 0))]));
     const rankOf = (a) => urgency.get(a.address);
-    if (byPriority) list = [...list].sort((x, y) => rankOf(y) - rankOf(x) || this.since(y) - this.since(x) || y.seq - x.seq);
+    const longest = sort.id === "longest";
+    if (byPriority) list = [...list].sort((x, y) => rankOf(y) - rankOf(x) || (longest ? this.since(x) - this.since(y) : this.since(y) - this.since(x)) || y.seq - x.seq);
     const pinned = list.filter((a) => a.pinned);
     const rest = list.filter((a) => !a.pinned);
     list = [...pinned, ...rest];
     setAgentOrder(list.map((a) => a.address));
 
     const withKids = (a, i) => {
-      const subs = collapsed ? [] : this.tree(all, a.address);
+      const subs = collapsed || twoCol ? [] : this.tree(all, a.address);
       const r = row(a, i, subs);
       if (this.folded.has(a.address)) return [r];
       return [r, ...subs.map((s) => this.subRow(t, s, shown, byPriority))];
@@ -898,6 +928,31 @@ export default class Agents extends View {
       const detailParts = change ? [] : [hero ? place : null, stat?.model, stat?.cost != null ? `$${stat.cost.toFixed(2)}` : null, hero ? session : place ? session : null].filter(Boolean);
       const line2 = change ? `\u270e ${change}` : detailParts.join(" \u00b7 ");
       const hint = [hero ? names[a.address] ?? titleCase(hero) : null, place, session, stat?.model, hasCtx ? `HP ${stat.ctx}%` : null, hasQuota ? `SP ${Math.max(0, 100 - stat.quota)}% left` : null].filter(Boolean).join(" \u00b7 ");
+      if (twoCol) {
+        // Two to a row: the animal, its name and one short line; the pin and the state share the corner.
+        const short = hero ? moodOf(a.status, life) : stat?.model ?? line2;
+        return h_flex().id(`ag-${a.address}`).relative().h(CARD_HEIGHT).flex_1().min_w(0).px(6).gap(6).items_center().rounded(8).border(1)
+          .border_color(a.focused ? t.input : t.border)
+          .when(a.focused, (el) => el.bg(t.selected))
+          .cursor_pointer()
+          .hover((s) => s.bg(t.hover))
+          .on_hover((on, cx) => {
+            if (on) this.hovered = a.address;
+            else if (this.hovered === a.address) this.hovered = null;
+            cx.notify();
+          })
+          .on_click(() => run("pane.focus", { pane: a.pane }))
+          .when(Boolean(hint), (el) => el.tooltip(hint))
+          .when(Boolean(sprite), (el) => el.child(div().id(`agent-sprite-${a.address}`).flex_none().w(SPRITE_SIZE).h(SPRITE_SIZE).child(sprite)))
+          .child(v_flex().flex_1().min_w(0).gap(2).pb(hasCtx || hasQuota ? 5 : 0)
+            .child(div().truncate().text_size(12).font_semibold().text_color(t.foreground).child(title))
+            .child(div().truncate().text_size(10.5).text_color(life === "alarm" ? t.blocked : t.muted).child(short || "")))
+          .when(hasCtx || hasQuota, (el) => el.child(h_flex().absolute().left(SPRITE_SIZE + 14).right(8).bottom(5).gap(5)
+            .when(hasCtx, (b) => b.child(this.miniBar(t, stat.ctx, stat.ctx >= CTX_DANGER ? t.blocked : stat.ctx >= CTX_WARN ? t.done : t.working)))
+            .when(hasQuota, (b) => b.child(this.miniBar(t, Math.max(0, 100 - stat.quota), 100 - stat.quota <= 10 ? t.blocked : 100 - stat.quota <= 30 ? t.done : t.accent)))))
+          .child(div().absolute().top(3).right(4).child(this.hovered === a.address ? pin : this.status(t, a, true, true)))
+          .when(dim, (el) => el.opacity(0.25));
+      }
       return h_flex()
         .id(`ag-${a.address}`)
         .px(8)
@@ -1000,9 +1055,14 @@ export default class Agents extends View {
           .when(!byPriority && top && top !== "idle", (el) => el.child(this.status(t, { status: top }, true)))
           .child(svg("mods/workspace-chrome/chevron-right.svg").size(11).flex_none().text_color(t.dim)));
     };
+    // Two to a row: the cards of a group, two by two (a lone last one keeps its half).
+    const body = (members) => twoCol
+      ? pairUp(members).map((two, n) => h_flex().id(`pair-${two[0].address}`).gap(4).my(2).flex_none()
+          .children([...two.map((a, k) => row(a, n * 2 + k)), ...(two.length < 2 ? [div().flex_1()] : [])]))
+      : members.flatMap(withKids);
     const rows = collapsed
       ? list.flatMap(withKids)
-      : groups.flatMap((g) => [header(g), ...(this.folded.has(g.id) ? [] : g.members.flatMap(withKids))]);
+      : groups.flatMap((g) => [header(g), ...(this.folded.has(g.id) ? [] : body(g.members))]);
 
     return v_flex()
       .size_full()
@@ -1027,6 +1087,9 @@ export default class Agents extends View {
               .tooltip("Bring everyone back")
               .on_click((_e, cx) => { tuckedAway.forEach((a) => this.settle(a.address, false)); cx.notify(); })
               .child(`✓ ${tuckedAway.length} in the barn`)))
+            .when(filter.id !== "all", (el) => el.child(div().id("ag-filter").px(6).h(18).flex().items_center().rounded(5).bg(t.accent + "26").text_size(10.5)
+              .font_semibold().text_color(t.accent).cursor_pointer().tooltip("Showing only this. Click to show everyone.")
+              .on_click((_e, cx) => { setShared(FILTER_KEY, "all"); cx.notify(); }).child(`${filter.label} \u00d7`)))
             .child(div().id("ag-find").cursor_pointer().text_color(this.finding ? t.accent : t.dim).tooltip("Find an animal")
               .on_click((_e, cx) => {
                 this.finding = !this.finding;
@@ -1045,18 +1108,20 @@ export default class Agents extends View {
                 .text_size(11)
                 .text_color(t.dim)
                 .hover((s) => s.text_color(t.foreground))
-                .on_click(() => openOverlay({ mod: "flock", kind: "popup", width: 200, height: 140, props: { sortMenu: true } }))
+                .on_click(() => openOverlay({ mod: "flock", kind: "popup", width: 220, height: 345, props: { sortMenu: true } }))
                 .tooltip(`Sort agents: ${sort.label}`)
                 .child(svg(`mods/workspace-chrome/${sort.icon}.svg`).size(14)),
             )),
         ),
       )
-      .when(list.length === 0 && !collapsed, (el) =>
+      .when(list.length === 0 && !collapsed && filter.id !== "all", (el) =>
+        el.child(div().px(12).text_size(12).text_color(t.dim).child(`Nobody is ${filter.label.toLowerCase()} right now.`)))
+      .when(list.length === 0 && !collapsed && filter.id === "all", (el) =>
         el.child(div().px(12).text_size(12).text_color(t.dim).child("No agent status yet. Agents show up here when they report their status. Older versions and agents inside tmux may not.")),
       )
       .when(!collapsed && this.finding, (el) => el.child(div().px(10).pb(6).flex_none()
         .child(Input.new(this.search).h(30).px(9).rounded(8).border(1).border_color(t.accent).bg(t.background).text_size(12).text_color(t.foreground))))
-      .when(!collapsed && (this.ranch.shipped > 0 || list.length > 0), (el) => el.child(this.board(t, waitingLong)))
+      .when(!collapsed && !boardHidden() && (this.ranch.shipped > 0 || list.length > 0), (el) => el.child(this.board(t, waitingLong)))
       .child(v_flex().id("ag-list").flex_1().min_h(0).px(collapsed ? 0 : 8).overflow_y_scrollbar().mode("always").children(rows))
       .when(collapsed, (el) =>
         el.child(

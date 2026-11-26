@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+Agent list polish.
+
+- **Show only one state.** The sort button in the Agents header now also has a **Show** list (Everyone, Needs you, Working, Done, Resting); a small chip in the header says what is filtered and clears it. There is a new sort, **Waiting longest first**, next to Priority (which already puts "Needs you" on top).
+- **"N needs you" in the status bar is a button.** It is red and bold, and a click focuses the next agent waiting for you, then the next, and around.
+- **Two agents per row.** A new setting in Ranch settings (the `···` button): smaller cards, side by side, with the animal, its name, its state and the HP and SP bars. Hover for the pin; sub-agent rows are left out in this layout.
+- **Hide the Ranch board** (the tree, tasks done today and spend) from Ranch settings.
+- **Scout lights up while reviewing**: a coloured edge and tint on its card, and "Reviewing" in the colour of work, on top of the busy poses it already had.
+
 ## 0.2.2
 
 The Update button works from anywhere, and agent cards match the server cards.
