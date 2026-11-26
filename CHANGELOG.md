@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.6.0
 
 - **Ranch Chat talks like a person.** Plain chat with no markdown marks, short messages that arrive one at a time with a "typing…" pause, and the view jumps to the start of a reply so you read it from the top (it scrolls to the end after your own message).
 - **It can look into the code and git.** Each message now also reads every agent's folder: branch, what changed and the last commits (also for agents on another machine), and, with **Reads code** on (the default), the parrot can open and search the code of agents on this computer and run read-only git, so it names the real file. It still cannot change anything.
