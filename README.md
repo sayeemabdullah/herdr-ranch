@@ -52,7 +52,7 @@ The terminal stays plain: no background art, nothing on the right. CPU, RAM and 
 <td width="33%" valign="top">
 
 ### Tools for developers
-Warnings before an agent runs out of context or quota, or gets stuck. What each task changed. Spend per agent and per day. One list of every agent waiting on you, and a button that jumps to the next. Hand what one agent has been doing to another. Dev servers and worktrees under your spaces. **Ranch Chat**: plan with a parrot that already knows what your agents are doing, with the model you pick.
+Warnings before an agent runs out of context or quota, or gets stuck. What each task changed. Spend per agent and per day. One list of every agent waiting on you, and a button that jumps to the next. Hand what one agent has been doing to another. Dev servers and worktrees under your spaces. **Ranch Chat**: plan with a parrot that already knows what your agents are doing, can read their git and code, and answers in plain chat, with the model you pick.
 
 </td>
 </tr>
@@ -239,7 +239,7 @@ A new agent gets one of the 8 common animals nobody is using; when all 8 are tak
 
 <p align="center"><img src="assets/ranch-chat.png" alt="Ranch Chat as the right side panel: a small parrot header with a Sonnet 5.5 button, a line saying it knows 3 of 3 agents and reads code, a question about where the export splits chunks, and the parrot answering in three short plain messages with a typing indicator" width="300"><br><sub>Ranch Chat in the side panel. The names and the answer are made up.</sub></p>
 
-Click the parrot **Chat** button in the top bar, just before the **+**, to plan with a parrot that already knows what your agents are doing.
+Click the parrot **Chat** button in the top bar, just before the **+**, to plan with a parrot that already knows what your agents are doing, and can look at their git and code.
 
 - **A side panel you can close, open and resize.** By default Chat opens in the right-hand panel, the one Files and Changes use: click **Chat** again to close it, and drag the divider to make it wider or narrower. Files, Changes and Chat share the panel, so you switch between them with their buttons.
 - **Or a pop-up window.** In Ranch settings (the `···` button), untick **Chat in a side panel** and Chat opens as a window instead.
@@ -292,7 +292,7 @@ python3 -m unittest discover -s tools
 | `mods/meadows` | spaces, the Reviewer, Servers and Worktrees sections (clone of `spaces`) |
 | `mods/flock-status`, `flock-toast` | status bar (with the Update button) and toasts |
 | `mods/ranch-chrome`, `ranch-tabs`, `ranch-pane` | sign and footer, tab bar with the ranch strip and the Chat and Files buttons, pane header |
-| `mods/ranch-chat` | Ranch Chat: the parrot chat that has your living agents' memory (`claude -p`, no tools) |
+| `mods/ranch-chat` | Ranch Chat: the side-panel chat with a parrot that knows your living agents, their git and code (`claude -p`, read-only tools) |
 | `mods/ranch-worktree` | the New and Open worktree dialog, in the ranch style, with Delete (a copy of herdr's `worktree`) |
 | `tools/` | the pictures, the sounds and the demo GIF, with their tests |
 | `assets/` | `demo.gif`, `memory-share.png`, `servers-worktrees.png`, `ranch-settings.png`, `ranch-chat.png`, `two-columns.png`, `worktree-dialog.png`, `toasts.png`, `update-toasts.png`, `update-button.png`, `preview-dusk.png` |
