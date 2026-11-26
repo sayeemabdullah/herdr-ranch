@@ -4,6 +4,8 @@ import { spaces, panes, agents, run, openOverlay, theme, window, shared, layout,
 
 // Ranch Chat: the parrot button next to the strip, opening the chat window. Hidden from Ranch settings (`ranch.hide.chat`).
 const chatHidden = () => (shared("ranch.hide") ?? {}).chat === true;
+// Ranch Chat opens in the right side panel (default) or as a pop-up window: Ranch settings, "Chat in a side panel".
+const chatPopup = () => (shared("ranch.layout") ?? {}).chat === "popup";
 
 function find(node, id) {
   if (node?.id === id) return node;
@@ -165,9 +167,10 @@ export default class Tabs extends View {
       ? Math.max(10, (root.traffic_lights[0] + 64) / settings().zoom - (sidebar?.hidden ? 0 : sidebar?.size?.px ?? 0))
       : 10;
     const panel = find(root, "panel"), body = find(root, "panel-body");
-    const enabled = shared("workspace.panels") ?? ["files", "changes"];
+    // Ranch Chat is a third side panel, with Files and Changes: one panel, resizable, shown or hidden.
+    const enabled = [...(shared("workspace.panels") ?? ["files", "changes"]), ...(chatHidden() || chatPopup() ? [] : ["chat"])];
     this.syncPanel(space, panel, body, enabled);
-    const panelButton = (id, label, icon) => {
+    const panelButton = (id, label, icon, tip) => {
       const on = panel && !panel.hidden && body?.active === id;
       return h_flex().id(`panel-${id}`).h(26).px(8).gap(5).flex_none().items_center().rounded(4).border(2).border_color(on ? t.accent : t.chrome)
         .text_size(12).bg(on ? t.selected : t.chrome).text_color(on ? t.foreground : t.muted)
@@ -175,7 +178,8 @@ export default class Tabs extends View {
         .on_click(() => {
           if (on) run("layout.hide", { id: "panel" });
           else { run("layout.select", { stack: "panel-body", child: id }); run("layout.show", { id: "panel" }); }
-        }).child(svg(icon).size(14)).child(label);
+        }).when(Boolean(tip), el => el.tooltip(tip))
+        .child(icon.endsWith(".png") || icon.includes("sprites/") ? image(icon).w(18).h(18).flex_none() : svg(icon).size(14)).child(label);
     };
     return h_flex().size_full().min_w(0).px(10).pl(lightsPadding).gap(3).items_center().bg(t.chrome).border_b(1).border_color(t.border)
       .on_mouse_up("left", () => { this.pressed = null; })
@@ -184,7 +188,8 @@ export default class Tabs extends View {
         .on_size_change((_size, cx) => { if (active >= 0) { this.scroll.scroll_to_item(active); cx.notify(); } })
         .children(shown.map(item)))
       .child(this.strip(t))
-      .when(!chatHidden(), el => el.child(h_flex().id("ranch-chat").h(26).px(8).gap(5).flex_none().items_center().rounded(4).border(2).border_color(t.chrome)
+      .when(enabled.includes("chat"), el => el.child(panelButton("chat", "Chat", "mods/flock/sprites/parrot.svg", "Ranch Chat: plan with a parrot that knows your agents")))
+      .when(!chatHidden() && chatPopup(), el => el.child(h_flex().id("ranch-chat").h(26).px(8).gap(5).flex_none().items_center().rounded(4).border(2).border_color(t.chrome)
         .text_size(12).text_color(t.muted).hover(s => s.bg(t.hover).text_color(t.foreground)).cursor_pointer()
         .tooltip("Ranch Chat: plan with a parrot that knows your agents")
         .on_mouse_down("left", stop).on_click(() => openOverlay({ mod: "ranch-chat", kind: "dialog", width: 640, height: 720 }))

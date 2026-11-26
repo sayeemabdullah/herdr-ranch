@@ -146,7 +146,7 @@ def main(shot_path=None):
     items = [
         ("Every agent is an animal", "A random pixel animal and name each. Three rare ones.", False),
         ("They live their day", "Nap, ring the alarm, throw confetti when done. A tree grows.", False),
-        ("Chat with a parrot", "It has your living agents' memory. Pick the model and plan.", True),
+        ("Chat with a parrot", "A resizable side panel that knows your agents. Pick the model.", True),
         ("Servers and worktrees", "A critter per dev server; branches as trees with PR and CI.", False),
         ("Hand off with Memory share", "Send an agent's recent screen to another. You read it first.", False),
         ("Scout reviews your PRs", "A sheepdog gets its own Reviewer section.", False),
