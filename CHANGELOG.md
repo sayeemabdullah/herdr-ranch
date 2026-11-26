@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.5.0
 
 - **Ranch Chat is a side panel.** It opens in the right-hand panel with Files and Changes: click **Chat** to open or close it, drag the divider to resize it. A new setting, **Chat in a side panel** in Ranch settings, switches it back to a pop-up window. The Chat button text in Ranch settings said "owl"; it is the parrot.
 
