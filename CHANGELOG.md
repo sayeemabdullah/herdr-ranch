@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- **Ranch Chat scrolls to what you send and to each new message.** Sending used to leave your message hidden below the fold (the scroll call was one this view does not have, and its error was swallowed); the view now brings the newest message, or the "typing…" row, into sight, and follows each reply message as it arrives. New messages fade in and rise into place, and "typing…" pulses.
+
 ## 0.6.0
 
 - **Ranch Chat talks like a person.** Plain chat with no markdown marks, short messages that arrive one at a time with a "typing…" pause, and the view jumps to the start of a reply so you read it from the top (it scrolls to the end after your own message).
