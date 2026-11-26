@@ -564,7 +564,28 @@ def hedgehog(c, ph):
     c.dot(12, 6, "B")
 
 
-CRITTERS = {"pig": pig, "cat": cat, "frog": frog, "hedgehog": hedgehog}
+def parrot(c, ph):
+    """Ranch Chat's animal: a green parrot with a red crest, a white face and blue wings."""
+    wing = 1 if ph else 0
+    feet(c, ph, "O", "Q", dx=2.6)
+    c.ell(7 - wing, 17, 1.9, 3.8, "U")
+    c.ell(17 + wing, 17, 1.9, 3.8, "U")
+    c.ell(12, 17.6, 5.2, 4.6, "M")
+    c.ell(12, 18.6, 3.0, 3.0, "Y")
+    c.ell(12, 9.8, 6.4, 5.6, "M")
+    c.poly([(9.5, 5.4), (10.6, 1.6), (12, 5.4)], "R")
+    c.poly([(12, 5.4), (13.4, 2.2), (14.8, 5.6)], "R")
+    c.shade("M", "m")
+    c.light("M", "I")
+    c.ell(9.2, 9.6, 2.3, 2.3, "W")
+    c.ell(14.8, 9.6, 2.3, 2.3, "W")
+    c.ell(12, 12.6, 2.7, 2.5, "O")
+    c.rect(11, 11, 12, 11, "Q")
+    c.dot(12, 14, "Q")
+    eyes(c, 9, 2.8)
+
+
+CRITTERS = {"pig": pig, "cat": cat, "frog": frog, "hedgehog": hedgehog, "parrot": parrot}
 
 
 ANIMALS = {

@@ -49,7 +49,7 @@ export function systemPrompt(memory, count) {
   const who = count === 0
     ? "No agents are in the memory right now, so answer from the question alone."
     : `Below is the memory: what ${count === 1 ? "one coding agent" : `${count} coding agents`} on the user's ranch recently showed on screen. Use it to plan, compare, spot clashes between them and suggest next steps. Say so when the memory does not tell you something.`;
-  return `You are Ranch Chat, a wise owl who helps the user plan with their coding agents. Be concrete and brief. You cannot run commands or change files; you can only talk.\n\n${who}${memory ? `\n\n${memory}` : ""}`;
+  return `You are Ranch Chat, a clever parrot who helps the user plan with their coding agents. Be concrete and brief. You cannot run commands or change files; you can only talk.\n\n${who}${memory ? `\n\n${memory}` : ""}`;
 }
 
 /** The chat so far, newest kept, then the new question: one prompt, since each call starts fresh. */

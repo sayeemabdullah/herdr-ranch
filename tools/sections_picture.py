@@ -198,7 +198,7 @@ def settings_picture(path, theme="dark", s=2):
 
 
 def chat_picture(path, theme="dark", s=2):
-    """The Ranch Chat window: the owl, the model, the agents in its memory, one question and its answer."""
+    """The Ranch Chat window: the parrot, the model, the agents in its memory, one question and its answer."""
     w, h = 640, 490
     pop = (92, 27, 80) if theme == "dark" else (222, 232, 200)
     img = Image.new("RGB", (round(w * s), round(h * s)), pop)
@@ -206,9 +206,9 @@ def chat_picture(path, theme="dark", s=2):
     c = pen.c
     sel = (106, 37, 96) if theme == "dark" else (157, 184, 120)
     pen.box(0.5, 0.5, w - 0.5, h - 0.5, 10, outline=c["border"])
-    pen.paste(critter("owl", "", 40 * s), 16, 14)
+    pen.paste(critter("parrot", "", 40 * s), 16, 14)
     pen.text(66, 16, "Ranch Chat", 15, c["fg"], "Semibold")
-    pen.text(66, 37, "An owl that has your living agents' memory. Ask it to plan.", 11.5, c["dim"])
+    pen.text(66, 37, "A parrot that has your living agents' memory. Ask it to plan.", 11.5, c["dim"])
     x = 16
     pen.text(x, 70, "Model", 11, c["dim"])
     x += 44

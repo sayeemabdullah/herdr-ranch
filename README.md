@@ -52,7 +52,7 @@ The terminal stays plain: no background art, nothing on the right. CPU, RAM and 
 <td width="33%" valign="top">
 
 ### Tools for developers
-Warnings before an agent runs out of context or quota, or gets stuck. What each task changed. Spend per agent and per day. One list of every agent waiting on you, and a button that jumps to the next. Hand what one agent has been doing to another. Dev servers and worktrees under your spaces. **Ranch Chat**: plan with an owl that already knows what your agents are doing, with the model you pick.
+Warnings before an agent runs out of context or quota, or gets stuck. What each task changed. Spend per agent and per day. One list of every agent waiting on you, and a button that jumps to the next. Hand what one agent has been doing to another. Dev servers and worktrees under your spaces. **Ranch Chat**: plan with a parrot that already knows what your agents are doing, with the model you pick.
 
 </td>
 </tr>
@@ -233,15 +233,15 @@ rm -rf layouts/Herdr-Ranch.* themes/ranch-*.json mods/flock mods/flock-status mo
   </tr>
 </table>
 
-A new agent gets one of the 8 common animals nobody is using; when all 8 are taken it takes one of the least used, in alternate colours. About 1 agent in 10 is a rare animal instead (fox 6%, owl 3%, dragon 1% of all agents). Rares never use up a common slot, and Scout is never given to an agent. The animal, its name and its colour are kept per terminal, so they survive restarts.
+A new agent gets one of the 8 common animals nobody is using; when all 8 are taken it takes one of the least used, in alternate colours. About 1 agent in 10 is a rare animal instead (fox 6%, owl 3%, dragon 1% of all agents). Rares never use up a common slot, and Scout is never given to an agent. The green parrot with the red crest belongs to Ranch Chat alone; no agent is ever a parrot. The animal, its name and its colour are kept per terminal, so they survive restarts.
 
 ### Ranch Chat
 
-<p align="center"><img src="assets/ranch-chat.png" alt="The Ranch Chat window: an owl, four model buttons with Sonnet 5.5 chosen, three agents ticked as the memory, a question about which agents might clash and the owl's answer, and a message box" width="420"><br><sub>Ranch Chat. The names and the answer are made up.</sub></p>
+<p align="center"><img src="assets/ranch-chat.png" alt="The Ranch Chat window: a parrot, four model buttons with Sonnet 5.5 chosen, three agents ticked as the memory, a question about which agents might clash and the parrot's answer, and a message box" width="420"><br><sub>Ranch Chat. The names and the answer are made up.</sub></p>
 
-Click the owl **Chat** button in the top bar, just before the **+**, to plan with an owl that already knows what your agents are doing.
+Click the parrot **Chat** button in the top bar, just before the **+**, to plan with a parrot that already knows what your agents are doing.
 
-- **The memory is your living agents, automatically.** Every message reads each running agent's recent screen (the last 80 conversation lines, at most 36,000 characters in all) fresh, so the owl always knows the state of things now. A new agent joins by itself. Tick or untick the animals above the chat to talk about one agent, a few or all of them (**All** and **None** switch everyone).
+- **The memory is your living agents, automatically.** Every message reads each running agent's recent screen (the last 80 conversation lines, at most 36,000 characters in all) fresh, so the parrot always knows the state of things now. A new agent joins by itself. Tick or untick the animals above the chat to talk about one agent, a few or all of them (**All** and **None** switch everyone).
 - **Pick the model for the chat:** Fable 5.2, Opus 5.5, Sonnet 5.5 (the default) or Haiku 5.5. It is remembered.
 - **Ask anything for planning:** what everyone is working on, which agents might clash, what to do next, how to split a task. Three starter questions are one click away. The chat is kept between openings; **Clear** empties it.
 - **It only talks.** It runs `claude -p` with no tools, so it cannot change files, run commands or message your agents. Use Memory share to pass something to an agent.
@@ -287,7 +287,7 @@ python3 -m unittest discover -s tools
 | `mods/meadows` | spaces, the Reviewer, Servers and Worktrees sections (clone of `spaces`) |
 | `mods/flock-status`, `flock-toast` | status bar (with the Update button) and toasts |
 | `mods/ranch-chrome`, `ranch-tabs`, `ranch-pane` | sign and footer, tab bar with the ranch strip, pane header |
-| `mods/ranch-chat` | Ranch Chat: the owl chat that has your living agents' memory (`claude -p`, no tools) |
+| `mods/ranch-chat` | Ranch Chat: the parrot chat that has your living agents' memory (`claude -p`, no tools) |
 | `mods/ranch-worktree` | the New and Open worktree dialog, in the ranch style, with Delete (a copy of herdr's `worktree`) |
 | `tools/` | the pictures, the sounds and the demo GIF, with their tests |
 | `assets/` | `demo.gif`, `memory-share.png`, `servers-worktrees.png`, `ranch-settings.png`, `ranch-chat.png`, `two-columns.png`, `worktree-dialog.png`, `toasts.png`, `update-toasts.png`, `update-button.png`, `preview-dusk.png` |

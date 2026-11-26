@@ -4,7 +4,7 @@
 
 Ranch Chat.
 
-- **Ranch Chat**: an owl **Chat** button in the top bar (before the **+**) opens a chat with an owl that has your living agents' memory. Every message reads each running agent's recent screen fresh, so new agents join by themselves; tick or untick the animals to talk about one, a few or all. Pick the model for the chat (Fable 5.2, Opus 5.5, Sonnet 5.5, Haiku 5.5). It answers through `claude -p` with no tools, so it only talks: it cannot change files or message agents. Hide the button in Ranch settings (**Chat button**).
+- **Ranch Chat**: a parrot **Chat** button in the top bar (before the **+**) opens a chat with a parrot that has your living agents' memory. Every message reads each running agent's recent screen fresh, so new agents join by themselves; tick or untick the animals to talk about one, a few or all. Pick the model for the chat (Fable 5.2, Opus 5.5, Sonnet 5.5, Haiku 5.5). It answers through `claude -p` with no tools, so it only talks: it cannot change files or message agents. Hide the button in Ranch settings (**Chat button**).
 - README: "What it runs" now names the update check and Ranch Chat as the only things that use the network.
 
 ## 0.3.0

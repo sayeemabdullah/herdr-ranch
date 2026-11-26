@@ -39,10 +39,10 @@ test("systemPrompt says how many agents are remembered", () => {
 });
 
 test("buildPrompt ends with the question, skips errors and trims the oldest first", () => {
-  const history = [{ role: "user", text: "hi" }, { role: "owl", text: "hello" }, { role: "owl", text: "boom", error: true }];
+  const history = [{ role: "user", text: "hi" }, { role: "parrot", text: "hello" }, { role: "owl", text: "boom", error: true }];
   assert.equal(buildPrompt(history, "plan?"), "User: hi\n\nRanch Chat: hello\n\nUser: plan?\n\nRanch Chat:");
   assert.equal(buildPrompt([], "x"), "User: x\n\nRanch Chat:");
-  const long = [{ role: "user", text: "old ".repeat(100) }, { role: "owl", text: "new" }];
+  const long = [{ role: "user", text: "old ".repeat(100) }, { role: "parrot", text: "new" }];
   assert.doesNotMatch(buildPrompt(long, "q", 50), /old/);
 });
 

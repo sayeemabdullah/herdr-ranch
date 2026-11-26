@@ -1,4 +1,4 @@
-// Ranch Chat: talk with an owl that has your living agents' memory, to plan and compare.
+// Ranch Chat: talk with a parrot that has your living agents' memory, to plan and compare.
 // The memory is each agent's recent screen (hc read), taken fresh with every message; the answer is one
 // `claude -p` call with the model you pick, with no tools. Nothing is sent to an agent.
 
@@ -33,13 +33,13 @@ export default class RanchChat extends View {
     this.toEnd = true;
   }
 
-  // The owl while it thinks: two frames, as the agent cards do.
-  owl(size, busy) {
-    if (!busy) return sprite("owl-idle", size);
+  // The parrot while it thinks: two frames, as the agent cards do.
+  parrot(size, busy) {
+    if (!busy) return sprite("parrot-idle", size);
     const frame = (file) => sprite(file, size);
     return div().relative().w(size).h(size).flex_none()
-      .child(frame("owl-work").loop("opacity", { from: 7, to: -6, period: 700, easing: "linear" }))
-      .child(frame("owl-2").absolute().top(0).left(0).loop("opacity", { from: -6, to: 7, period: 700, easing: "linear" }));
+      .child(frame("parrot-work").loop("opacity", { from: 7, to: -6, period: 700, easing: "linear" }))
+      .child(frame("parrot-2").absolute().top(0).left(0).loop("opacity", { from: -6, to: 7, period: 700, easing: "linear" }));
   }
 
   // Reads every remembered agent's screen now, asks the model, adds the reply.
@@ -76,7 +76,7 @@ export default class RanchChat extends View {
       } catch (error) {
         reply = { ok: false, text: String(error).slice(0, 240) };
       }
-      this.log = [...this.log, { role: "owl", text: reply.text, error: !reply.ok, model, count }];
+      this.log = [...this.log, { role: "parrot", text: reply.text, error: !reply.ok, model, count }];
       this.busy = false;
       this.toEnd = true;
       save(LOG_KEY, this.log.slice(-KEEP));
@@ -128,10 +128,10 @@ export default class RanchChat extends View {
     const link = (id, label, action) => div().id(id).text_size(11).text_color(t.dim).cursor_pointer().hover((el) => el.text_color(t.foreground)).on_click(action).child(label);
     return v_flex().size_full().min_h(0).p(16).gap(10).bg(t.popover).text_size(13)
       .child(h_flex().gap(10).items_center()
-        .child(this.owl(40, this.busy))
+        .child(this.parrot(40, this.busy))
         .child(v_flex().flex_1().min_w(0)
           .child(div().text_size(15).font_semibold().text_color(t.foreground).child("Ranch Chat"))
-          .child(div().truncate().text_size(11.5).text_color(t.dim).child("An owl that has your living agents' memory. Ask it to plan.")))
+          .child(div().truncate().text_size(11.5).text_color(t.dim).child("A parrot that has your living agents' memory. Ask it to plan.")))
         .when(this.log.length > 0, (el) => el.child(link("chat-clear", "Clear", (_e, cx2) => { this.log = []; save(LOG_KEY, []); cx2.notify(); }))))
       .child(h_flex().gap(5).items_center().flex_wrap()
         .child(div().text_size(11).text_color(t.dim).mr(3).child("Model"))
@@ -146,11 +146,11 @@ export default class RanchChat extends View {
       .child(div().h(1).w_full().flex_none().bg(t.border))
       .child(v_flex().id("chat-log").flex_1().min_h(0).gap(10).overflow_y_scrollbar().track_scroll(this.scroll)
         .when(this.log.length === 0, (el) => el.child(v_flex().gap(8).py(8)
-          .child(div().text_size(12).text_color(t.dim).child("Every message reads your agents' screens fresh, so the owl always knows what they are doing now. New agents join by themselves; untick one above to leave it out."))
+          .child(div().text_size(12).text_color(t.dim).child("Every message reads your agents' screens fresh, so the parrot always knows what they are doing now. New agents join by themselves; untick one above to leave it out."))
           .children(SUGGESTIONS.map((s, i) => div().id(`suggest-${i}`).px(10).py(7).rounded(8).border(1).border_color(t.border).bg(t.raised).text_size(12).text_color(t.muted)
             .cursor_pointer().hover((e) => e.bg(t.hover)).on_click((_e, cx2) => this.ask(cx2, s)).child(s)))))
         .children(this.log.map((m, i) => this.bubble(t, m, i)))
-        .when(this.busy, (el) => el.child(div().px(4).text_size(11.5).text_color(t.dim).child(`The owl is reading ${inMemory === 1 ? "1 agent" : `${inMemory} agents`} and thinking…`))))
+        .when(this.busy, (el) => el.child(div().px(4).text_size(11.5).text_color(t.dim).child(`The parrot is reading ${inMemory === 1 ? "1 agent" : `${inMemory} agents`} and thinking…`))))
       .child(h_flex().gap(8).items_center()
         .child(Input.new(this.input).flex_1().h(38).px(10).rounded(8).border(1).border_color(t.accent).bg(t.background).text_size(12.5).text_color(t.foreground))
         .child(div().id("chat-send").px(14).h(38).flex().items_center().rounded(8).flex_none().font_semibold().text_size(12.5)
