@@ -52,7 +52,7 @@ The terminal stays plain: no background art, nothing on the right. CPU, RAM and 
 <td width="33%" valign="top">
 
 ### Tools for developers
-Warnings before an agent runs out of context or quota, or gets stuck. What each task changed. Spend per agent and per day. One list of every agent waiting on you. Hand what one agent has been doing to another.
+Warnings before an agent runs out of context or quota, or gets stuck. What each task changed. Spend per agent and per day. One list of every agent waiting on you, and a button that jumps to the next. Hand what one agent has been doing to another. Dev servers and worktrees under your spaces. **Ranch Chat**: plan with an owl that already knows what your agents are doing, with the model you pick.
 
 </td>
 </tr>
