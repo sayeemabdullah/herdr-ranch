@@ -76,7 +76,7 @@ Looking at an animal (focusing its pane) resets it to "Resting". Sub-agents show
 - **Spaces** with arch-badge emblems (barn, silo, haystack, pond, windmill, orchard, fence). The sky follows your clock: dawn, day, dusk, night with a moon and stars. A star twinkles while an agent in that space is working.
 - **Reviewer.** A space where [PR Reviewer](https://github.com/sayeemabdullah/herdr-PR-reviewer)'s PR Panel (or its watcher) is running moves out of the list into a section of its own under Spaces. The space's name doesn't matter, and a space that only has "PR Reviewer" in its name (say, where you write the plugin) stays a normal space: Scout the sheepdog, what it is doing (Reviewing, Needs you, Review done, Waiting for PRs), one click to the space. Claude reviews the pull requests you're asked to review there.
 
-- **Quiet when you want it.** Each section's heading (Reviewer, Servers, Worktrees) has a chevron: click it to fold the section, and herdr remembers. Worktrees starts folded. The **···** button in the status bar at the bottom, just left of CPU, opens "Ranch settings", where you untick Reviewer, Servers, Worktrees, the Ranch board (the tree) or the version and update button to hide them for good (also the **Chat button**), and tick **Two agents per row** for smaller cards side by side. Hiding Reviewer puts Scout's space back in the Spaces list.
+- **Quiet when you want it.** Each section's heading (Reviewer, Servers, Worktrees) has a chevron: click it to fold the section, and herdr remembers. Worktrees starts folded. The **···** button in the status bar at the bottom, just left of CPU, opens "Ranch settings", where you untick Reviewer, Servers, Worktrees, the Ranch board (the tree) or the version and update button to hide them for good (also the **Chat button**), tick **Two agents per row** for smaller cards side by side, and choose whether Chat opens in a side panel or a pop-up (**Chat in a side panel**). Hiding Reviewer puts Scout's space back in the Spaces list.
 
 <p align="center"><img src="assets/ranch-settings.png" alt="The Ranch settings popup: ticked or unticked boxes for Reviewer, Servers, Worktrees, the Ranch board, the Chat button and the version and update button, and boxes for two agents per row and for Chat in a side panel" width="280"><br><sub>The sidebar settings. Drawn from the real colours; the names are made up.</sub></p>
 
@@ -207,7 +207,7 @@ Delete what the installer added (nothing else is touched), then pick another lay
 
 ```sh
 cd ~/.config/herdr-app
-rm -rf layouts/Herdr-Ranch.* themes/ranch-*.json mods/flock mods/flock-status mods/flock-toast mods/meadows mods/ranch-chrome mods/ranch-pane mods/ranch-tabs
+rm -rf layouts/Herdr-Ranch.* themes/ranch-*.json mods/flock mods/flock-status mods/flock-toast mods/meadows mods/ranch-chrome mods/ranch-pane mods/ranch-tabs mods/ranch-worktree mods/ranch-chat
 ```
 
 ## The cast
@@ -289,7 +289,7 @@ python3 -m unittest discover -s tools
 | `mods/flock` | the agent cards, board, bell, find, memory share, sounds' mute button (clone of herdr's `agents`) |
 | `mods/meadows` | spaces, the Reviewer, Servers and Worktrees sections (clone of `spaces`) |
 | `mods/flock-status`, `flock-toast` | status bar (with the Update button) and toasts |
-| `mods/ranch-chrome`, `ranch-tabs`, `ranch-pane` | sign and footer, tab bar with the ranch strip, pane header |
+| `mods/ranch-chrome`, `ranch-tabs`, `ranch-pane` | sign and footer, tab bar with the ranch strip and the Chat and Files buttons, pane header |
 | `mods/ranch-chat` | Ranch Chat: the parrot chat that has your living agents' memory (`claude -p`, no tools) |
 | `mods/ranch-worktree` | the New and Open worktree dialog, in the ranch style, with Delete (a copy of herdr's `worktree`) |
 | `tools/` | the pictures, the sounds and the demo GIF, with their tests |
