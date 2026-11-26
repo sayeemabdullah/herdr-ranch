@@ -35,22 +35,83 @@ export function screenTail(screen, n = MEMORY_LINES, cap = 6000) {
 /** Everyone alive except the ones switched off: a new agent is in the memory without anyone adding it. */
 export const remembered = (live, off) => live.filter((a) => !(off ?? []).includes(a.address));
 
-/** The memory text: one block per agent (name, space, state, recent screen), the whole kept under MEMORY_CAP. */
+/** The memory text: one block per agent (name, space, folder, state, git, recent screen), the whole kept under MEMORY_CAP. */
 export function buildMemory(blocks, cap = MEMORY_CAP) {
   if (!blocks.length) return "";
   const each = Math.max(400, Math.floor(cap / blocks.length) - 200);
   return blocks
-    .map((b) => `## ${b.name}${b.animal ? ` (${b.animal})` : ""} — ${[b.space, b.status].filter(Boolean).join(" · ")}\n${screenTail(b.screen, MEMORY_LINES, each) || "(nothing on its screen yet)"}`)
+    .map((b) => {
+      const head = `## ${b.name}${b.animal ? ` (${b.animal})` : ""} — ${[b.space, b.status].filter(Boolean).join(" · ")}`;
+      const where = b.folder ? `\nFolder: ${b.folder}${b.machine ? ` (on ${b.machine}; its files cannot be opened from here)` : ""}` : "";
+      const git = b.git ? `\nGit:\n${b.git}` : "";
+      return `${head}${where}${git}\nScreen:\n${screenTail(b.screen, MEMORY_LINES, each) || "(nothing on its screen yet)"}`;
+    })
     .join("\n\n");
 }
 
-/** What the model is told it is. */
-export function systemPrompt(memory, count) {
+/** Read-only git for one folder: the branch, what changed, the last commits. Each is one argv for `git`. */
+export const GIT_LOOKS = [
+  ["status", "--short", "--branch"],
+  ["diff", "--stat", "HEAD"],
+  ["log", "-6", "--pretty=format:%h %ar %an: %s"],
+];
+
+/** The three git answers as a short block; empty when the folder is not a repo. */
+export function gitBlock(results) {
+  const [status, diff, log] = results.map((r) => (r?.code === 0 ? String(r.stdout ?? "").trim() : ""));
+  if (!status && !log) return "";
+  const cut = (t, n) => t.split("\n").slice(0, n).join("\n");
+  return [status && cut(status, 30), diff && `Changed since the last commit:\n${cut(diff, 20)}`, log && `Recent commits:\n${log}`].filter(Boolean).join("\n");
+}
+
+/** What the model is told it is: a person-like colleague who talks in plain, short chat messages. */
+export function systemPrompt(memory, count, { code = false } = {}) {
   const who = count === 0
     ? "No agents are in the memory right now, so answer from the question alone."
-    : `Below is the memory: what ${count === 1 ? "one coding agent" : `${count} coding agents`} on the user's ranch recently showed on screen. Use it to plan, compare, spot clashes between them and suggest next steps. Say so when the memory does not tell you something.`;
-  return `You are Ranch Chat, a clever parrot who helps the user plan with their coding agents. Be concrete and brief. You cannot run commands or change files; you can only talk.\n\n${who}${memory ? `\n\n${memory}` : ""}`;
+    : `Below is what ${count === 1 ? "one coding agent" : `${count} coding agents`} on the user's ranch is doing: its space, folder, git state and recent screen. Use it to plan, compare, spot clashes and suggest next steps. ${code ? "You can also read the code in those folders and run read-only git (log, diff, show, blame) to check before you answer; do that when the answer depends on what the code really says, and name the file." : "You cannot open files, so say so when the memory does not tell you something."}`;
+  return [
+    "You are Ranch Chat, a parrot who works beside the user like a sharp teammate, helping them plan with their coding agents.",
+    "Write the way a person writes in a chat app: plain text only. No markdown at all: no asterisks, no backticks, no headings, no tables, no bullet symbols. Say file names and commands as they are.",
+    "Keep it short and talk like a colleague. Open with the answer. Use two to five short paragraphs separated by a blank line, each one idea. Call agents by their names. If you list things, put each on its own line starting with a number and a dot, three at most.",
+    "Be concrete and honest. If you do not know, or cannot see it, say so in a line instead of guessing. Never repeat the question back. You cannot change files, run anything that writes, or message the agents.",
+    "",
+    who,
+    memory ? `\n${memory}` : "",
+  ].join("\n");
 }
+
+/** Chat-style plain text: the markdown Claude still slips in (bold, code, headings, bullets) removed. */
+export function plainChat(text) {
+  return String(text ?? "")
+    .replace(/```[a-z]*\n?/gi, "")
+    .replace(/\*\*(.+?)\*\*/gs, "$1")
+    .replace(/__(.+?)__/gs, "$1")
+    .replace(/(?<![\w*])\*(?!\s)(.+?)(?<!\s)\*(?![\w*])/g, "$1")
+    .replace(/`([^`\n]+)`/g, "$1")
+    .replace(/^\s{0,3}#{1,6}\s+/gm, "")
+    .replace(/^\s*[-*•]\s+/gm, "- ")
+    .replace(/^\s*>\s?/gm, "")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+/** The reply as chat messages: one per paragraph, a long paragraph split at sentences, and at most `most` of them (the last ones are joined). */
+export function splitChunks(text, { max = 320, most = 7 } = {}) {
+  const out = [];
+  for (const para of plainChat(text).split(/\n{2,}/).map((p) => p.trim()).filter(Boolean)) {
+    if (para.length <= max) { out.push(para); continue; }
+    let cur = "";
+    for (const sentence of para.split(/(?<=[.!?])\s+(?=[A-Z0-9"'(])/)) {
+      if (cur && (cur + " " + sentence).length > max) { out.push(cur); cur = sentence; } else cur = cur ? `${cur} ${sentence}` : sentence;
+    }
+    if (cur) out.push(cur);
+  }
+  while (out.length > most) out.splice(out.length - 2, 2, `${out[out.length - 2]}\n\n${out[out.length - 1]}`);
+  return out.length ? out : [""];
+}
+
+/** How long a person would take to type it: a beat, then a little per character, never long. */
+export const typingMs = (chunk) => Math.min(1700, 450 + String(chunk).length * 9);
 
 /** The chat so far, newest kept, then the new question: one prompt, since each call starts fresh. */
 export function buildPrompt(history, question, cap = HISTORY_CAP) {
@@ -59,8 +120,16 @@ export function buildPrompt(history, question, cap = HISTORY_CAP) {
   return `${lines.length ? `${lines.join("\n\n")}\n\n` : ""}User: ${question}\n\nRanch Chat:`;
 }
 
-/** Arguments for `claude`: print mode, the chosen model, no tools, nothing saved to disk. */
-export const claudeArgs = ({ model, system, prompt }) => ["-p", "--model", modelOf(model).id, "--tools", "", "--no-session-persistence", "--append-system-prompt", system, prompt];
+/** Read-only tools the parrot may use when it looks at code. */
+export const READ_TOOLS = ["Read", "Grep", "Glob", "Bash(git log *)", "Bash(git diff *)", "Bash(git show *)", "Bash(git blame *)", "Bash(git status *)", "Bash(git branch *)", "Bash(git ls-files *)", "Bash(git grep *)"];
+
+/** Arguments for `claude`: print mode, the chosen model, nothing saved to disk. Without `code` it has no tools at all;
+ *  with it, only the read-only ones, and it may look inside `dirs`. The prompt comes first so a list option cannot swallow it. */
+export function claudeArgs({ model, system, prompt, code = false, dirs = [] }) {
+  const base = ["-p", prompt, "--model", modelOf(model).id, "--no-session-persistence", "--append-system-prompt", system];
+  if (!code) return [...base, "--tools", ""];
+  return [...base, "--tools", "Read,Grep,Glob,Bash", "--permission-mode", "dontAsk", "--allowed-tools", ...READ_TOOLS, ...dirs.flatMap((d) => ["--add-dir", d])];
+}
 
 /** The reply from `claude`'s output, or the reason it failed (not installed, not signed in...). */
 export function parseReply({ code, stdout, stderr }) {

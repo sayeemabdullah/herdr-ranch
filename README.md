@@ -237,21 +237,23 @@ A new agent gets one of the 8 common animals nobody is using; when all 8 are tak
 
 ### Ranch Chat
 
-<p align="center"><img src="assets/ranch-chat.png" alt="Ranch Chat as the right side panel: a parrot, four model buttons with Sonnet 5.5 chosen, three agents ticked as the memory, a question about which agents might clash and the parrot's answer, and a message box" width="300"><br><sub>Ranch Chat in the side panel. The names and the answer are made up.</sub></p>
+<p align="center"><img src="assets/ranch-chat.png" alt="Ranch Chat as the right side panel: a small parrot header with a Sonnet 5.5 button, a line saying it knows 3 of 3 agents and reads code, a question about where the export splits chunks, and the parrot answering in three short plain messages with a typing indicator" width="300"><br><sub>Ranch Chat in the side panel. The names and the answer are made up.</sub></p>
 
 Click the parrot **Chat** button in the top bar, just before the **+**, to plan with a parrot that already knows what your agents are doing.
 
 - **A side panel you can close, open and resize.** By default Chat opens in the right-hand panel, the one Files and Changes use: click **Chat** again to close it, and drag the divider to make it wider or narrower. Files, Changes and Chat share the panel, so you switch between them with their buttons.
 - **Or a pop-up window.** In Ranch settings (the `···` button), untick **Chat in a side panel** and Chat opens as a window instead.
 
-- **The memory is your living agents, automatically.** Every message reads each running agent's recent screen (the last 80 conversation lines, at most 36,000 characters in all) fresh, so the parrot always knows the state of things now. A new agent joins by itself. Tick or untick the animals above the chat to talk about one agent, a few or all of them (**All** and **None** switch everyone).
-- **Pick the model for the chat:** Fable 5.2, Opus 5.5, Sonnet 5.5 (the default) or Haiku 5.5. It is remembered.
+- **It talks like a person.** Plain chat, no formatting marks: short messages that arrive one after another with a "typing…" pause, and a long reply starts at the top of its first message so you read it from the beginning.
+- **It knows your living agents, automatically.** Every message reads each running agent's recent screen (the last 80 conversation lines), its space and folder, and its git: the branch, what changed and the last commits. A new agent joins by itself. Click **Knows 6 of 8 agents** to tick or untick the animals, so you can talk about one, a few or all (**All** and **None** switch everyone).
+- **It can read your code.** With **Reads code** on (the default), it can open files and search the code of agents on this computer and run read-only git (`log`, `diff`, `show`, `blame`), so it answers from what the code really says and names the file. For an agent on another machine it sees the screen, the git state and the uncommitted changes, but cannot open its files. Switch **Reads code** off and it only sees the screens and git summaries.
+- **Pick the model for the chat:** the small button at the top right (Fable 5.2, Opus 5.5, Sonnet 5.5 (the default) or Haiku 5.5). It is remembered.
 - **Ask anything for planning:** what everyone is working on, which agents might clash, what to do next, how to split a task. Three starter questions are one click away. The chat is kept between openings; **Clear** empties it.
-- **It only talks.** It runs `claude -p` with no tools, so it cannot change files, run commands or message your agents. Use Memory share to pass something to an agent.
+- **It only reads and talks.** Its only tools are reading files and read-only git, so it cannot change files, run commands or message your agents. Use Memory share to pass something to an agent.
 - It needs the `claude` command (Claude Code) signed in on this computer, and each message is one `claude` call on your account. Hide the button in Ranch settings (**Chat button**).
 
 > [!WARNING]
-> Pressing Send sends the selected agents' recent screens to Claude, as any Claude Code message would. Untick an agent whose screen shows something you don't want sent.
+> Pressing Send sends the selected agents' recent screens and git to Claude, and with **Reads code** on it can read files in their folders, as any Claude Code session would. Untick an agent, or switch **Reads code** off, when something there is not for Claude.
 
 ## What it runs
 
@@ -260,7 +262,7 @@ These mods are trusted code. Before you install, know that:
 - `flock` reads each agent's screen with `hc read` (model, context, quota, cost, whether it looks stuck) every 15 seconds, runs `git diff --shortstat HEAD` (read-only) in each agent's folder on this computer, and posts warning toasts.
 - `meadows` runs `git` (`rev-parse`, `symbolic-ref`, `rev-list`) in each space's folder and watches that repo for changes, to show the branch, and runs `hc machine ls`. This is the same as herdr's own spaces list.
 - `flock` also runs `hc send` once, to the agent you chose, only when you press **Send** in the Memory share window.
-- `ranch-chat` runs `hc read` on the agents you left ticked and then `claude -p` (no tools), only when you press **Send** in Ranch Chat. That sends those screens to Claude.
+- `ranch-chat` runs `hc read` and read-only `git` (here, or through `hc exec --on` for a machine) in the folders of the agents you left ticked, and then `claude -p` with read-only tools (file reading and read-only git; none at all with **Reads code** off), only when you press **Send** in Ranch Chat. That sends what it reads to Claude.
 - `flock-status` runs `ps`, `vm_stat`, `sysctl` and `df` (and `nproc` and `cat /proc/meminfo` on Linux) every 5 seconds for the meters.
 - `flock-toast` runs `terminal-notifier` or `osascript` (macOS) or `notify-send` (Linux) for system banners when the window is in the background, and plays the animal's sound with herdr's own `playSound`.
 - `ranch-chrome`, `ranch-tabs` and `ranch-pane` only draw: they read herdr's lists and the values the others publish.
