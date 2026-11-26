@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { MODELS, DEFAULT_MODEL, modelOf, screenTail, remembered, buildMemory, systemPrompt, buildPrompt, claudeArgs, parseReply } from "../mods/ranch-chat/chat.js";
+import { MODELS, DEFAULT_MODEL, modelOf, screenTail, remembered, buildMemory, systemPrompt, buildPrompt, claudeArgs, parseReply, plainChat, splitChunks, typingMs, gitBlock, GIT_LOOKS } from "../mods/ranch-chat/chat.js";
 
 test("an unknown model falls back to the default", () => {
   assert.equal(modelOf("nope").id, DEFAULT_MODEL);
@@ -22,8 +22,8 @@ test("remembered keeps every living agent except the switched-off ones", () => {
 
 test("buildMemory names each agent and handles an empty screen", () => {
   const text = buildMemory([{ name: "Basil", animal: "sheep", space: "docs", status: "working", screen: "fixing the build" }, { name: "Pickle", space: "api", status: "idle", screen: "" }]);
-  assert.match(text, /## Basil \(sheep\) — docs · working\nfixing the build/);
-  assert.match(text, /## Pickle — api · idle\n\(nothing on its screen yet\)/);
+  assert.match(text, /## Basil \(sheep\) — docs · working\nScreen:\nfixing the build/);
+  assert.match(text, /## Pickle — api · idle\nScreen:\n\(nothing on its screen yet\)/);
   assert.equal(buildMemory([]), "");
 });
 
@@ -46,13 +46,56 @@ test("buildPrompt ends with the question, skips errors and trims the oldest firs
   assert.doesNotMatch(buildPrompt(long, "q", 50), /old/);
 });
 
-test("claudeArgs picks the model, no tools, and puts the prompt last", () => {
+test("buildMemory carries the folder, machine and git when known", () => {
+  const text = buildMemory([{ name: "Basil", space: "docs", status: "idle", folder: "/home/a/docs", machine: "box", git: "## main", screen: "x" }]);
+  assert.match(text, /Folder: \/home\/a\/docs \(on box; its files cannot be opened from here\)\nGit:\n## main\nScreen:\nx/);
+});
+
+test("gitBlock joins status, diff and log, and is empty outside a repo", () => {
+  const ok = (stdout) => ({ code: 0, stdout });
+  const text = gitBlock([ok("## main...origin/main\n M a.js"), ok(" a.js | 2 +-"), ok("abc123 2 hours ago Sam: fix")]);
+  assert.match(text, /## main[\s\S]*Changed since the last commit:\na\.js \| 2 \+-[\s\S]*Recent commits:\nabc123/);
+  assert.equal(gitBlock([{ code: 128, stdout: "" }, { code: 128, stdout: "" }, { code: 128, stdout: "" }]), "");
+  assert.equal(GIT_LOOKS.length, 3);
+});
+
+test("systemPrompt asks for plain chat, and for code reading only when allowed", () => {
+  assert.match(systemPrompt("", 1), /No markdown at all/);
+  assert.match(systemPrompt("", 1, { code: true }), /read the code in those folders/);
+  assert.doesNotMatch(systemPrompt("", 1), /read the code/);
+});
+
+test("plainChat removes markdown the way a chat message would not have it", () => {
+  assert.equal(plainChat("**Bold** and `code` and __under__"), "Bold and code and under");
+  assert.equal(plainChat("## Title\n* one\n* two"), "Title\n- one\n- two");
+  assert.equal(plainChat("```js\nlet a = 1\n```"), "let a = 1");
+  assert.equal(plainChat("2 * 3 * 4"), "2 * 3 * 4");
+});
+
+test("splitChunks makes one message per paragraph and splits long ones at sentences", () => {
+  assert.deepEqual(splitChunks("One.\n\nTwo.\n\n\nThree."), ["One.", "Two.", "Three."]);
+  const long = splitChunks(`${"First sentence here. ".repeat(10)}Last one.`, { max: 100 });
+  assert.ok(long.length > 1 && long.every((c) => c.length <= 140));
+  assert.equal(splitChunks("a\n\nb\n\nc\n\nd", { most: 2 }).length, 2);
+  assert.deepEqual(splitChunks(""), [""]);
+});
+
+test("typingMs grows with the message and stays short", () => {
+  assert.ok(typingMs("hi") < typingMs("x".repeat(100)));
+  assert.equal(typingMs("x".repeat(5000)), 1700);
+});
+
+test("claudeArgs: no tools by default; read-only ones and folders with code", () => {
   const a = claudeArgs({ model: "claude-haiku-5-5", system: "S", prompt: "P" });
-  assert.deepEqual(a.slice(0, 2), ["-p", "--model"]);
-  assert.equal(a[2], "claude-haiku-5-5");
+  assert.deepEqual(a.slice(0, 2), ["-p", "P"]);
+  assert.equal(a[a.indexOf("--model") + 1], "claude-haiku-5-5");
   assert.equal(a[a.indexOf("--tools") + 1], "");
-  assert.equal(a.at(-1), "P");
   assert.equal(a[a.indexOf("--append-system-prompt") + 1], "S");
+  const c = claudeArgs({ model: "x", system: "S", prompt: "P", code: true, dirs: ["/a", "/b"] });
+  assert.equal(c[c.indexOf("--tools") + 1], "Read,Grep,Glob,Bash");
+  assert.ok(c.includes("Bash(git log *)") && !c.some((t) => /git (push|commit|add|reset)/.test(t)));
+  assert.deepEqual(c.filter((_, i) => c[i - 1] === "--add-dir"), ["/a", "/b"]);
+  assert.equal(c[c.indexOf("--permission-mode") + 1], "dontAsk");
 });
 
 test("parseReply returns the text, or the last line of the failure", () => {

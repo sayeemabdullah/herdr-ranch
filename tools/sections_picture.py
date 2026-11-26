@@ -203,63 +203,49 @@ def settings_picture(path, theme="dark", s=2):
 
 
 def chat_picture(path, theme="dark", s=2):
-    """Ranch Chat as the right side panel (368 wide): the parrot, the model, the agents in its memory, one question and its answer."""
-    w, h = 368, 640
+    """Ranch Chat as the right side panel (368 wide): plain chat bubbles, the parrot's picture, the small model button."""
+    w, h = 368, 560
     pop = (74, 18, 64) if theme == "dark" else (232, 240, 214)
     img = Image.new("RGB", (round(w * s), round(h * s)), pop)
     pen = Pen(img, s, theme)
     c = pen.c
     sel = (106, 37, 96) if theme == "dark" else (157, 184, 120)
+    bub = (60, 12, 52) if theme == "dark" else (244, 248, 232)
     pen.box(0.5, 0.5, w - 0.5, h - 0.5, 8, outline=c["border"])
-    pen.paste(critter("parrot", "", 40 * s), 12, 12)
-    pen.text(62, 14, "Ranch Chat", 15, c["fg"], "Semibold")
-    pen.text(62, 35, "A parrot that has your living agents' memory.", 11, c["dim"])
-    pen.text(12, 70, "Model", 11, c["dim"])
-    x, y = 56, 64
-    for label, on in (("Fable 5.2", False), ("Opus 5.5", False), ("Sonnet 5.5", True), ("Haiku 5.5", False)):
-        tw = pen.d.textlength(label, font=font(11.5 * s)) / s
-        if x + tw + 18 > w - 12:
-            x, y = 56, y + 30
-        pen.box(x, y, x + tw + 18, y + 24, 6, fill=sel if on else None, outline=c["gold"] if on else c["border"])
-        pen.text(x + 9, y + 5, label, 11.5, c["fg"] if on else c["muted"])
-        x += tw + 24
-    y += 42
-    pen.text(12, y, "Memory: 3 of 3 agents", 11, c["dim"])
-    pen.text(w - 52, y, "All  None", 11, c["dim"])
-    y += 20
-    x = 12
-    for animal, name in (("sheep", "Basil"), ("rabbit", "Pickle"), ("cow", "Cocoa")):
-        tw = pen.d.textlength(name, font=font(11.5 * s)) / s
-        pen.box(x, y, x + tw + 40, y + 26, 6, fill=sel, outline=c["gold"])
-        pen.paste(critter(animal, "", 18 * s), x + 8, y + 4)
-        pen.text(x + 32, y + 6, name, 11.5, c["fg"])
-        x += tw + 46
-    y += 42
-    pen.d.line([(12 * s, y * s), ((w - 12) * s, y * s)], fill=tuple(c["border"]), width=max(1, round(s)))
-    y += 16
-    q = "Which of my agents might clash?"
+    pen.paste(critter("parrot", "", 28 * s), 12, 12)
+    pen.text(48, 15, "Ranch Chat", 14, c["fg"], "Semibold")
+    label = "Sonnet 5.5 \u25be"
+    tw = pen.d.textlength(label, font=font(11.5 * s)) / s
+    pen.box(w - 12 - tw - 16, 14, w - 12, 38, 12, outline=c["border"])
+    pen.text(w - 12 - tw - 8, 19, label, 11.5, c["muted"])
+    pen.text(12, 52, "Knows 3 of 3 agents \u25be", 11, c["dim"])
+    pen.d.ellipse(((w - 84) * s, 55 * s, (w - 76) * s, 63 * s), fill=tuple(c["gold"]))
+    pen.text(w - 70, 52, "Reads code", 11, c["fg"])
+    pen.d.line([(12 * s, 78 * s), ((w - 12) * s, 78 * s)], fill=tuple(c["border"]), width=max(1, round(s)))
+    y = 94
+    q = "Where does the export split chunks?"
     qw = pen.d.textlength(q, font=font(12.5 * s)) / s
-    pen.box(w - 12 - qw - 24, y, w - 12, y + 34, 10, fill=sel, outline=c["gold"])
-    pen.text(w - 12 - qw - 12, y + 9, q, 12.5, c["fg"])
-    y += 52
-    lines = ["Basil is editing README.md in docs,",
-             "and Pickle just finished /health in",
-             "api-server. They touch different",
-             "files, so no clash now.",
-             "Cocoa's auth refactor reads the",
-             "config Pickle changed, so merge",
-             "Pickle's PR first, then have Cocoa",
-             "rebase before it goes further."]
-    box_h = 20 + 18 * len(lines)
-    pen.box(12, y, w - 36, y + box_h, 10, fill=(60, 12, 52) if theme == "dark" else (244, 248, 232), outline=c["border"])
-    for i, line in enumerate(lines):
-        pen.text(24, y + 10 + i * 18, line, 12.5, c["fg"])
-    pen.text(16, y + box_h + 4, "Sonnet 5.5 \u00b7 3 agents in the memory", 10.5, c["dim"])
-    pen.box(12, h - 76, w - 80, h - 40, 8, outline=c["gold"])
-    pen.text(22, h - 66, "Ask about your agents\u2026", 12.5, c["dim"])
-    pen.box(w - 70, h - 76, w - 12, h - 40, 8, fill=c["gold"])
-    pen.text(w - 54, h - 66, "Send", 12.5, c["on_gold"], "Semibold")
-    pen.text(12, h - 28, "Chat only: it cannot run anything or message your agents.", 10, c["dim"])
+    pen.box(w - 12 - qw - 22, y, w - 12, y + 32, 12, fill=sel)
+    pen.text(w - 12 - qw - 11, y + 8, q, 12.5, c["fg"])
+    y += 50
+    msgs = [["It's in src/export/chunks.js, in splitRows."],
+            ["It cuts a table every 500 rows, then Pickle's", "branch sends each piece to enrich. That part", "is still uncommitted on feat/export-opts."],
+            ["I'd merge Pickle's PR first, then have Basil", "rebase before touching the same file."]]
+    for i, lines in enumerate(msgs):
+        hgt = 14 + 17 * len(lines)
+        if i == 0:
+            pen.paste(critter("parrot", "", 24 * s), 12, y + hgt - 24)
+        bw = max(pen.d.textlength(l, font=font(12.5 * s)) / s for l in lines) + 22
+        pen.box(44, y, 44 + bw, y + hgt, 12, fill=bub)
+        for k, line in enumerate(lines):
+            pen.text(55, y + 7 + k * 17, line, 12.5, c["fg"])
+        y += hgt + 8
+    pen.box(44, y, 44 + 58, y + 28, 12, fill=bub)
+    pen.text(55, y + 6, "typing\u2026", 12, c["dim"])
+    pen.box(12, h - 52, w - 76, h - 16, 18, outline=c["gold"], fill=bub)
+    pen.text(26, h - 42, "Message the parrot\u2026", 12.5, c["dim"])
+    pen.box(w - 68, h - 52, w - 12, h - 16, 18, fill=c["gold"])
+    pen.text(w - 52, h - 42, "Send", 12.5, c["on_gold"], "Semibold")
     img.save(path)
 
 

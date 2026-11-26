@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- **Ranch Chat talks like a person.** Plain chat with no markdown marks, short messages that arrive one at a time with a "typing…" pause, and the view jumps to the start of a reply so you read it from the top (it scrolls to the end after your own message).
+- **It can look into the code and git.** Each message now also reads every agent's folder: branch, what changed and the last commits (also for agents on another machine), and, with **Reads code** on (the default), the parrot can open and search the code of agents on this computer and run read-only git, so it names the real file. It still cannot change anything.
+- **A simpler panel.** The model is one small button, the agents are folded behind "Knows 6 of 8 agents", and the parrot's messages are small bubbles with its picture.
+
 ## 0.5.0
 
 - **Ranch Chat is a side panel.** It opens in the right-hand panel with Files and Changes: click **Chat** to open or close it, drag the divider to resize it. A new setting, **Chat in a side panel** in Ranch settings, switches it back to a pop-up window. The Chat button text in Ranch settings said "owl"; it is the parrot.
