@@ -11,7 +11,7 @@
 
 <p><a href="https://github.com/sayeemabdullah/herdr-ranch/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/sayeemabdullah/herdr-ranch/ci.yml?branch=master&style=flat-square&label=CI"></a> <a href="https://herdr.dev"><img alt="herdr layout, herdr-app 0.1.16" src="https://img.shields.io/badge/herdr%20layout-0.1.16-222?style=flat-square"></a> <a href="https://nodejs.org"><img alt="Node 22 or newer, for the tests" src="https://img.shields.io/badge/node-%E2%89%A5%2022-339933?style=flat-square&logo=node.js&logoColor=white"></a> <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-0969da?style=flat-square"></a></p>
 
-[Install](#install) · [Update](#update) · [What you get](#what-you-get) · [Servers and worktrees](#servers-and-worktrees) · [Memory share](#memory-share) · [The cast](#the-cast) · [What it runs](#what-it-runs) · [Develop](#develop) · [Contributing](CONTRIBUTING.md)
+[Install](#install) · [Update](#update) · [What you get](#what-you-get) · [Servers and worktrees](#servers-and-worktrees) · [Memory share](#memory-share) · [Ranch Chat](#ranch-chat) · [The cast](#the-cast) · [What it runs](#what-it-runs) · [Develop](#develop) · [Contributing](CONTRIBUTING.md)
 
 <br>
 
@@ -76,7 +76,7 @@ Looking at an animal (focusing its pane) resets it to "Resting". Sub-agents show
 - **Spaces** with arch-badge emblems (barn, silo, haystack, pond, windmill, orchard, fence). The sky follows your clock: dawn, day, dusk, night with a moon and stars. A star twinkles while an agent in that space is working.
 - **Reviewer.** A space where [PR Reviewer](https://github.com/sayeemabdullah/herdr-PR-reviewer)'s PR Panel (or its watcher) is running moves out of the list into a section of its own under Spaces. The space's name doesn't matter, and a space that only has "PR Reviewer" in its name (say, where you write the plugin) stays a normal space: Scout the sheepdog, what it is doing (Reviewing, Needs you, Review done, Waiting for PRs), one click to the space. Claude reviews the pull requests you're asked to review there.
 
-- **Quiet when you want it.** Each section's heading (Reviewer, Servers, Worktrees) has a chevron: click it to fold the section, and herdr remembers. Worktrees starts folded. The **···** button in the status bar at the bottom, just left of CPU, opens "Ranch settings", where you untick Reviewer, Servers, Worktrees, the Ranch board (the tree) or the version and update button to hide them for good, and tick **Two agents per row** for smaller cards side by side. Hiding Reviewer puts Scout's space back in the Spaces list.
+- **Quiet when you want it.** Each section's heading (Reviewer, Servers, Worktrees) has a chevron: click it to fold the section, and herdr remembers. Worktrees starts folded. The **···** button in the status bar at the bottom, just left of CPU, opens "Ranch settings", where you untick Reviewer, Servers, Worktrees, the Ranch board (the tree) or the version and update button to hide them for good (also the **Chat button**), and tick **Two agents per row** for smaller cards side by side. Hiding Reviewer puts Scout's space back in the Spaces list.
 
 <p align="center"><img src="assets/ranch-settings.png" alt="The Ranch settings popup: ticked or unticked boxes for Reviewer, Servers, Worktrees, the Ranch board and the version and update button, and a box for two agents per row" width="280"><br><sub>The sidebar settings. Drawn from the real colours; the names are made up.</sub></p>
 
@@ -235,6 +235,21 @@ rm -rf layouts/Herdr-Ranch.* themes/ranch-*.json mods/flock mods/flock-status mo
 
 A new agent gets one of the 8 common animals nobody is using; when all 8 are taken it takes one of the least used, in alternate colours. About 1 agent in 10 is a rare animal instead (fox 6%, owl 3%, dragon 1% of all agents). Rares never use up a common slot, and Scout is never given to an agent. The animal, its name and its colour are kept per terminal, so they survive restarts.
 
+### Ranch Chat
+
+<p align="center"><img src="assets/ranch-chat.png" alt="The Ranch Chat window: an owl, four model buttons with Sonnet 5.5 chosen, three agents ticked as the memory, a question about which agents might clash and the owl's answer, and a message box" width="420"><br><sub>Ranch Chat. The names and the answer are made up.</sub></p>
+
+Click the owl **Chat** button in the top bar, just before the **+**, to plan with an owl that already knows what your agents are doing.
+
+- **The memory is your living agents, automatically.** Every message reads each running agent's recent screen (the last 80 conversation lines, at most 36,000 characters in all) fresh, so the owl always knows the state of things now. A new agent joins by itself. Tick or untick the animals above the chat to talk about one agent, a few or all of them (**All** and **None** switch everyone).
+- **Pick the model for the chat:** Fable 5.2, Opus 5.5, Sonnet 5.5 (the default) or Haiku 5.5. It is remembered.
+- **Ask anything for planning:** what everyone is working on, which agents might clash, what to do next, how to split a task. Three starter questions are one click away. The chat is kept between openings; **Clear** empties it.
+- **It only talks.** It runs `claude -p` with no tools, so it cannot change files, run commands or message your agents. Use Memory share to pass something to an agent.
+- It needs the `claude` command (Claude Code) signed in on this computer, and each message is one `claude` call on your account. Hide the button in Ranch settings (**Chat button**).
+
+> [!WARNING]
+> Pressing Send sends the selected agents' recent screens to Claude, as any Claude Code message would. Untick an agent whose screen shows something you don't want sent.
+
 ## What it runs
 
 These mods are trusted code. Before you install, know that:
@@ -242,10 +257,12 @@ These mods are trusted code. Before you install, know that:
 - `flock` reads each agent's screen with `hc read` (model, context, quota, cost, whether it looks stuck) every 15 seconds, runs `git diff --shortstat HEAD` (read-only) in each agent's folder on this computer, and posts warning toasts.
 - `meadows` runs `git` (`rev-parse`, `symbolic-ref`, `rev-list`) in each space's folder and watches that repo for changes, to show the branch, and runs `hc machine ls`. This is the same as herdr's own spaces list.
 - `flock` also runs `hc send` once, to the agent you chose, only when you press **Send** in the Memory share window.
+- `ranch-chat` runs `hc read` on the agents you left ticked and then `claude -p` (no tools), only when you press **Send** in Ranch Chat. That sends those screens to Claude.
 - `flock-status` runs `ps`, `vm_stat`, `sysctl` and `df` (and `nproc` and `cat /proc/meminfo` on Linux) every 5 seconds for the meters.
 - `flock-toast` runs `terminal-notifier` or `osascript` (macOS) or `notify-send` (Linux) for system banners when the window is in the background, and plays the animal's sound with herdr's own `playSound`.
 - `ranch-chrome`, `ranch-tabs` and `ranch-pane` only draw: they read herdr's lists and the values the others publish.
-- **Nothing uses the network.**
+- `flock-status` also asks GitHub for the latest release with `curl` (every few hours), and runs the installer only when you press **Update**.
+- **The network is used by the update check, the Update button and Ranch Chat, and nothing else.**
 
 `herdr-app check` prints "mod called hc" for `flock`: that is expected.
 
@@ -258,7 +275,7 @@ python3 tools/sprites.py            # pictures
 python3 tools/sounds.py             # the animal sounds (standard library only)
 python3 tools/banners.py            # system-banner PNGs; needs Pillow
 python3 tools/demo_gif.py           # the README's demo GIF; needs Pillow
-node --test                         # casting, vitals, stats, warnings, board, memory share
+node --test                         # casting, vitals, stats, warnings, board, memory share, agent list, chat
 python3 -m unittest discover -s tools
 ```
 
@@ -270,9 +287,10 @@ python3 -m unittest discover -s tools
 | `mods/meadows` | spaces, the Reviewer, Servers and Worktrees sections (clone of `spaces`) |
 | `mods/flock-status`, `flock-toast` | status bar (with the Update button) and toasts |
 | `mods/ranch-chrome`, `ranch-tabs`, `ranch-pane` | sign and footer, tab bar with the ranch strip, pane header |
+| `mods/ranch-chat` | Ranch Chat: the owl chat that has your living agents' memory (`claude -p`, no tools) |
 | `mods/ranch-worktree` | the New and Open worktree dialog, in the ranch style, with Delete (a copy of herdr's `worktree`) |
 | `tools/` | the pictures, the sounds and the demo GIF, with their tests |
-| `assets/` | `demo.gif`, `memory-share.png`, `servers-worktrees.png`, `ranch-settings.png`, `worktree-dialog.png`, `toasts.png`, `update-toasts.png`, `update-button.png`, `preview-dusk.png` |
+| `assets/` | `demo.gif`, `memory-share.png`, `servers-worktrees.png`, `ranch-settings.png`, `ranch-chat.png`, `two-columns.png`, `worktree-dialog.png`, `toasts.png`, `update-toasts.png`, `update-button.png`, `preview-dusk.png` |
 | `VERSION` | the release number the Update button compares with |
 
 [RECIPE.md](RECIPE.md) is the full brief the layout can be rebuilt from (the format herdr.dev's gallery uses). See [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request: changes go through PRs with Conventional Commit titles, never straight to `master`.

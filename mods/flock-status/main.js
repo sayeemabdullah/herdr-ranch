@@ -193,7 +193,7 @@ export default class WorkspaceStatus extends View {
         .child(svg("mods/flock/icons/ui-up.svg").size(11).text_color(t.solid_foreground ?? "#33062b").flex_none()).child(this.updating ? "Updating\u2026" : `Update to ${this.update.tag}`)))
       // Always there, even when the version is hidden: it is how the version and the sections come back.
       .child(div().id("ranch-settings").size(20).flex_none().flex().items_center().justify_center().rounded(5).cursor_pointer()
-        .hover(s => s.bg(t.hover)).on_click(() => openOverlay({ mod: "meadows", kind: "popup", width: 280, height: 410, props: { ranchSettings: true } }))
+        .hover(s => s.bg(t.hover)).on_click(() => openOverlay({ mod: "meadows", kind: "popup", width: 280, height: 454, props: { ranchSettings: true } }))
         .child(svg("mods/flock/icons/ui-dots.svg").size(13).text_color(t.dim)))
       .when(!this.update && Boolean(this.version) && (shared("ranch.hide") ?? {}).update !== true, el => el.child(div().id("ranch-version").text_size(11).text_color(t.dim).cursor_pointer()
         .hover(s => s.text_color(t.foreground)).on_click((_e, cx) => this.checkUpdate(cx, true)).child(`Ranch v${this.version}`)))

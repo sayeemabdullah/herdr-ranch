@@ -875,6 +875,7 @@ export default class Spaces extends View {
       ["servers", "Servers", "dev servers running in your spaces"],
       ["worktrees", "Worktrees", "each repo's worktrees"],
       ["board", "Ranch board", "the tree, tasks done today and spend"],
+      ["chat", "Chat button", "the owl in the top bar"],
       ["update", "Version and update button", "bottom right of the window"],
     ];
     const two = (shared(LAYOUT_KEY) ?? {}).columns === 2;
