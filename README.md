@@ -82,9 +82,9 @@ Looking at an animal (focusing its pane) resets it to "Resting". Sub-agents show
 
 - **Ranch board.** Tasks done today, work time and spend, an apple tree that grows with your day (stages at 1, 4, 8, 13, 19 and 26 tasks, blossoms at 30, droops while someone has waited on you for over 5 minutes), and a gauge for the lowest 5-hour quota left.
 - **Agent cards.** Every card is one size, the same as a server card. First line: the animal, its name (click to rename) and its state. Second line: the space, the model, the cost and the tab title, or, after a task, what it changed. An **HP** bar (context used, green then yellow then red) and an **SP** bar (5-hour quota left) are two thin lines along the bottom; hover a card for the numbers and the full title.
-- **Two to a row.** Tick "Two agents per row" in Ranch settings for smaller cards side by side: the animal, its name, its state and the HP and SP bars; hover a card for the details and the pin.
+- **Two to a row.** Tick "Two agents per row" in Ranch settings for smaller cards side by side: the animal, its name, the space it is connected to (red while it needs you) and the HP and SP bars; hover a card for the model, the state and the pin.
 
-<p align="center"><img src="assets/two-columns.png" alt="The Agents list in two columns: Olive and Basil working, then six resting animals, two to a row, each card with the animal, its name and its state" width="280"><br><sub>The real sidebar with two agents per row.</sub></p>
+<p align="center"><img src="assets/two-columns.png" alt="The Agents list in two columns: Basil working, then six resting animals, two to a row, each card with the animal, its name and the space it is connected to" width="280"><br><sub>The real sidebar with two agents per row.</sub></p>
 
 - **Show one state, waiting first.** The sort button has Priority (needs you, then done, working, resting), Waiting longest first, and Grouped by space, plus a **Show** list: Everyone, Needs you, Working, Done or Resting. A chip in the header says what is filtered; click it to clear.
 - **"N needs you" in the status bar** is a red button. Click it to jump to the next agent waiting for you, and again for the one after.

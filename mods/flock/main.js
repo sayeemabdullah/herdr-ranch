@@ -929,8 +929,8 @@ export default class Agents extends View {
       const line2 = change ? `\u270e ${change}` : detailParts.join(" \u00b7 ");
       const hint = [hero ? names[a.address] ?? titleCase(hero) : null, place, session, stat?.model, hasCtx ? `HP ${stat.ctx}%` : null, hasQuota ? `SP ${Math.max(0, 100 - stat.quota)}% left` : null].filter(Boolean).join(" \u00b7 ");
       if (twoCol) {
-        // Two to a row: the animal, its name and one short line; the pin and the state share the corner.
-        const short = hero ? moodOf(a.status, life) : stat?.model ?? line2;
+        // Two to a row: the animal, its name and the space it is connected to (red while it needs you or its alarm rings); the pin and the state share the corner.
+        const short = a.space_name || (hero ? moodOf(a.status, life) : stat?.model ?? line2);
         return h_flex().id(`ag-${a.address}`).relative().h(CARD_HEIGHT).flex_1().min_w(0).px(6).gap(6).items_center().rounded(8).border(1)
           .border_color(a.focused ? t.input : t.border)
           .when(a.focused, (el) => el.bg(t.selected))
@@ -946,7 +946,7 @@ export default class Agents extends View {
           .when(Boolean(sprite), (el) => el.child(div().id(`agent-sprite-${a.address}`).flex_none().w(SPRITE_SIZE).h(SPRITE_SIZE).child(sprite)))
           .child(v_flex().flex_1().min_w(0).gap(2).pb(hasCtx || hasQuota ? 5 : 0)
             .child(div().truncate().text_size(12).font_semibold().text_color(t.foreground).child(title))
-            .child(div().truncate().text_size(10.5).text_color(life === "alarm" ? t.blocked : t.muted).child(short || "")))
+            .child(div().truncate().text_size(10.5).text_color(life === "alarm" || a.status === "blocked" ? t.blocked : t.muted).child(short || "")))
           .when(hasCtx || hasQuota, (el) => el.child(h_flex().absolute().left(SPRITE_SIZE + 14).right(8).bottom(5).gap(5)
             .when(hasCtx, (b) => b.child(this.miniBar(t, stat.ctx, stat.ctx >= CTX_DANGER ? t.blocked : stat.ctx >= CTX_WARN ? t.done : t.working)))
             .when(hasQuota, (b) => b.child(this.miniBar(t, Math.max(0, 100 - stat.quota), 100 - stat.quota <= 10 ? t.blocked : 100 - stat.quota <= 30 ? t.done : t.accent)))))
