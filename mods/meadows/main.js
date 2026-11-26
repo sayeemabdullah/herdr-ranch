@@ -701,12 +701,12 @@ export default class Spaces extends View {
     const WORDS = { working: "Reviewing", blocked: "Needs you", done: "Review done", idle: "Waiting for PRs" };
     const sprite = (name) => image(`mods/flock/sprites/${name}.svg`).w(32).h(32).flex_none();
     const pose = (status) => (status === "working" ? "sheepdog-work" : status === "idle" ? "sheepdog-idle" : status === "blocked" || status === "done" ? `sheepdog-${status}` : "sheepdog");
-    const second = (status) => (status === "working" ? "sheepdog-2" : status === "idle" ? "sheepdog-idle-2" : null);
+    // Scout always wags its tail: every state swaps between two frames that differ in the tail (and, at work, the feet).
+    const second = (status) => (status === "working" ? "sheepdog-2" : status === "blocked" || status === "done" ? `sheepdog-${status}-2` : "sheepdog-wag");
     const picture = (status) => {
-      const still = sprite(pose(status));
+      const still = sprite(status === "idle" ? "sheepdog" : pose(status));
       const next = second(status);
-      if (!next) return still;
-      const period = status === "working" ? 800 : 1800;
+      const period = status === "working" ? 500 : 560;
       return div().relative().w(32).h(32).flex_none()
         .child(still.loop("opacity", { from: 7, to: -6, period, easing: "linear" }))
         .child(sprite(next).absolute().top(0).left(0).loop("opacity", { from: -6, to: 7, period, easing: "linear" }));

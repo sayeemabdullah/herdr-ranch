@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- **Ranch Chat: tone and your own instructions.** A **Style** link in the panel opens five tones (Casual, Friendly, Direct, Formal, Playful) and a box for standing instructions that the parrot follows in every message. They are kept between openings.
+- **Ranch Chat has a close button** (×, top right).
+- **Scout always wags its tail.** New frames: its tail swings up and out in every state (waiting, reviewing, needs you, done), not only while it works.
+
 ## 0.6.1
 
 - **Ranch Chat scrolls to what you send and to each new message.** Sending used to leave your message hidden below the fold (the scroll call was one this view does not have, and its error was swallowed); the view now brings the newest message, or the "typing…" row, into sight, and follows each reply message as it arrives. New messages fade in and rise into place, and "typing…" pulses.
