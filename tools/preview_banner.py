@@ -146,7 +146,8 @@ def main(shot_path=None):
     items = [
         ("Every agent is an animal", "A random pixel animal and name each. Three rare ones.", False),
         ("They live their day", "Nap, ring the alarm, throw confetti when done. A tree grows.", False),
-        ("Servers and worktrees", "A critter for each dev server: open, stop, restart. Branches as pixel trees with PR and CI status.", True),
+        ("Chat with a parrot", "It has your living agents' memory. Pick the model and plan.", True),
+        ("Servers and worktrees", "A critter per dev server; branches as trees with PR and CI.", False),
         ("Hand off with Memory share", "Send an agent's recent screen to another. You read it first.", False),
         ("Scout reviews your PRs", "A sheepdog gets its own Reviewer section.", False),
     ]
@@ -171,24 +172,24 @@ def main(shot_path=None):
             else:
                 line = t
         d.text((124, ly), line, font=fb, fill=(226, 190, 214))
-        y += 82 if lines == 1 else 108
+        y += 76 if lines == 1 else 102
     ft = font(18, BOLD)
     for k, line in enumerate((
-        "Also: update button  \u00b7  needs-you bell  \u00b7  find  \u00b7  what a task changed",
-        "honest spend  \u00b7  sounds  \u00b7  day and night emblems  \u00b7  CPU/RAM/disk  \u00b7  2 themes",
+        "Also: two per row  \u00b7  filter by state  \u00b7  needs-you bell  \u00b7  find",
+        "what a task changed  \u00b7  honest spend  \u00b7  sounds  \u00b7  day and night emblems  \u00b7  CPU/RAM/disk  \u00b7  2 themes",
     )):
-        d.text((60, 726 + k * 24), line, font=ft, fill=GOLD)
+        d.text((60, 752 + k * 24), line, font=ft, fill=GOLD)
     # the Update button itself, as it looks in the status bar
-    label = "Update to v0.3.0"
+    label = "Update to v0.4.0"
     fu = font(17, BOLD)
     pw = d.textlength(label, font=fu) + 44
-    d.rounded_rectangle((668, 724, 668 + pw, 752), 8, fill=GOLD)
+    d.rounded_rectangle((600, 750, 600 + pw, 778), 8, fill=GOLD)
     arrow = sprites.ui_icon_grids()["ui-up"]
     for ay, row in enumerate(arrow):
         for ax, ch in enumerate(row):
             if ch != ".":
-                d.rectangle((680 + ax * 2, 731 + ay * 2, 680 + ax * 2 + 1, 731 + ay * 2 + 1), fill=DEEP)
-    d.text((704, 726), label, font=fu, fill=DEEP)
+                d.rectangle((612 + ax * 2, 757 + ay * 2, 612 + ax * 2 + 1, 757 + ay * 2 + 1), fill=DEEP)
+    d.text((636, 752), label, font=fu, fill=DEEP)
 
     # fence and the herd
     fy = 926
