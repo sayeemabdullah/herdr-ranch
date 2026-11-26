@@ -1,4 +1,4 @@
-// Ranch Chat: talk with a parrot that has your living agents' memory, to plan and compare.
+// Ranch Chat, a side panel (Files and Changes live beside it): talk with a parrot that has your living agents' memory, to plan and compare.
 // The memory is each agent's recent screen (hc read), taken fresh with every message; the answer is one
 // `claude -p` call with the model you pick, with no tools. Nothing is sent to an agent.
 
@@ -95,8 +95,8 @@ export default class RanchChat extends View {
     const lines = String(m.text).split("\n");
     const side = (el) => (mine ? el.items_end() : el.items_start());
     return side(v_flex().id(`msg-${i}`).w_full().gap(3))
-      .child(v_flex().max_w(460).px(11).py(8).rounded(10).border(1).gap(2).text_size(12.5)
-        .border_color(m.error ? t.blocked : mine ? t.accent : t.border).bg(mine ? t.selected : t.chrome)
+      .child(v_flex().min_w(0).max_w(460).px(11).py(8).rounded(10).border(1).gap(2).text_size(12.5)
+        .border_color(m.error ? t.blocked : mine ? t.accent : t.border).bg(mine ? t.selected : t.background)
         .text_color(m.error ? t.blocked : t.foreground)
         .children(lines.map((l) => div().min_w(0).child(l === "" ? " " : l))))
       .when(!mine && !m.error && m.model, (el) => el.child(div().px(4).text_size(10.5).text_color(t.dim)
@@ -126,7 +126,7 @@ export default class RanchChat extends View {
         .child(div().text_size(11.5).text_color(on ? t.foreground : t.dim).child(names[a.address] ?? titleCase(hero) ?? a.program?.name ?? a.address));
     };
     const link = (id, label, action) => div().id(id).text_size(11).text_color(t.dim).cursor_pointer().hover((el) => el.text_color(t.foreground)).on_click(action).child(label);
-    return v_flex().size_full().min_h(0).p(16).gap(10).bg(t.popover).text_size(13)
+    return v_flex().size_full().min_w(0).min_h(0).p(12).gap(10).bg(t.chrome).text_size(13)
       .child(h_flex().gap(10).items_center()
         .child(this.parrot(40, this.busy))
         .child(v_flex().flex_1().min_w(0)
@@ -156,8 +156,6 @@ export default class RanchChat extends View {
         .child(div().id("chat-send").px(14).h(38).flex().items_center().rounded(8).flex_none().font_semibold().text_size(12.5)
           .bg(this.busy ? t.raised : t.solid ?? t.accent).text_color(this.busy ? t.dim : t.solid_foreground ?? t.background)
           .cursor_pointer().on_click((_e, cx2) => this.ask(cx2)).child(this.busy ? "…" : "Send")))
-      .child(h_flex().justify_between().text_size(10.5).text_color(t.dim)
-        .child("Chat only: it cannot run anything or message your agents.")
-        .child("esc close"));
+      .child(div().text_size(10.5).text_color(t.dim).child("Chat only: it cannot run anything or message your agents."));
   }
 }

@@ -875,10 +875,11 @@ export default class Spaces extends View {
       ["servers", "Servers", "dev servers running in your spaces"],
       ["worktrees", "Worktrees", "each repo's worktrees"],
       ["board", "Ranch board", "the tree, tasks done today and spend"],
-      ["chat", "Chat button", "the owl in the top bar"],
+      ["chat", "Chat button", "the parrot in the top bar"],
       ["update", "Version and update button", "bottom right of the window"],
     ];
     const two = (shared(LAYOUT_KEY) ?? {}).columns === 2;
+    const sidePanel = (shared(LAYOUT_KEY) ?? {}).chat !== "popup";
     const box = (on) => div().size(16).flex_none().flex().items_center().justify_center().rounded(4).border(1)
       .border_color(on ? t.accent : t.border).bg(on ? t.accent : t.background)
       .when(on, (el) => el.child(svg("mods/workspace-chrome/check.svg").size(11).text_color(t.solid_foreground ?? t.background)));
@@ -897,6 +898,10 @@ export default class Spaces extends View {
         .on_click((_e, cx) => { setShared(LAYOUT_KEY, { ...(shared(LAYOUT_KEY) ?? {}), columns: two ? 1 : 2 }); cx.notify(); })
         .child(box(two))
         .child(v_flex().flex_1().min_w(0).child(div().text_color(t.foreground).child("Two agents per row")).child(div().truncate().text_size(11).text_color(t.dim).child("smaller cards, side by side"))))
+      .child(h_flex().id("chat-panel").h(44).px(8).gap(10).items_center().rounded(8).cursor_pointer().hover((el) => el.bg(t.hover))
+        .on_click((_e, cx) => { setShared(LAYOUT_KEY, { ...(shared(LAYOUT_KEY) ?? {}), chat: sidePanel ? "popup" : "panel" }); cx.notify(); })
+        .child(box(sidePanel))
+        .child(v_flex().flex_1().min_w(0).child(div().text_color(t.foreground).child("Chat in a side panel")).child(div().truncate().text_size(11).text_color(t.dim).child("unticked: a pop-up window"))))
       .child(div().flex_1())
       .child(h_flex().justify_end().text_size(11).text_color(t.dim).child("esc close"));
   }

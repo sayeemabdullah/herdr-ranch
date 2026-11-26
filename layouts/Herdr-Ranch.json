@@ -135,6 +135,13 @@
                       }
                     },
                     {
+                      "id": "chat",
+                      "type": "block",
+                      "content": {
+                        "mod": "ranch-chat"
+                      }
+                    },
+                    {
                       "id": "changes",
                       "type": "block",
                       "content": {

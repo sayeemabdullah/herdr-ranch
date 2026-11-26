@@ -78,7 +78,7 @@ Looking at an animal (focusing its pane) resets it to "Resting". Sub-agents show
 
 - **Quiet when you want it.** Each section's heading (Reviewer, Servers, Worktrees) has a chevron: click it to fold the section, and herdr remembers. Worktrees starts folded. The **···** button in the status bar at the bottom, just left of CPU, opens "Ranch settings", where you untick Reviewer, Servers, Worktrees, the Ranch board (the tree) or the version and update button to hide them for good (also the **Chat button**), and tick **Two agents per row** for smaller cards side by side. Hiding Reviewer puts Scout's space back in the Spaces list.
 
-<p align="center"><img src="assets/ranch-settings.png" alt="The Ranch settings popup: ticked or unticked boxes for Reviewer, Servers, Worktrees, the Ranch board and the version and update button, and a box for two agents per row" width="280"><br><sub>The sidebar settings. Drawn from the real colours; the names are made up.</sub></p>
+<p align="center"><img src="assets/ranch-settings.png" alt="The Ranch settings popup: ticked or unticked boxes for Reviewer, Servers, Worktrees, the Ranch board, the Chat button and the version and update button, and boxes for two agents per row and for Chat in a side panel" width="280"><br><sub>The sidebar settings. Drawn from the real colours; the names are made up.</sub></p>
 
 - **Ranch board.** Tasks done today, work time and spend, an apple tree that grows with your day (stages at 1, 4, 8, 13, 19 and 26 tasks, blossoms at 30, droops while someone has waited on you for over 5 minutes), and a gauge for the lowest 5-hour quota left.
 - **Agent cards.** Every card is one size, the same as a server card. First line: the animal, its name (click to rename) and its state. Second line: the space, the model, the cost and the tab title, or, after a task, what it changed. An **HP** bar (context used, green then yellow then red) and an **SP** bar (5-hour quota left) are two thin lines along the bottom; hover a card for the numbers and the full title.
@@ -237,9 +237,12 @@ A new agent gets one of the 8 common animals nobody is using; when all 8 are tak
 
 ### Ranch Chat
 
-<p align="center"><img src="assets/ranch-chat.png" alt="The Ranch Chat window: a parrot, four model buttons with Sonnet 5.5 chosen, three agents ticked as the memory, a question about which agents might clash and the parrot's answer, and a message box" width="420"><br><sub>Ranch Chat. The names and the answer are made up.</sub></p>
+<p align="center"><img src="assets/ranch-chat.png" alt="Ranch Chat as the right side panel: a parrot, four model buttons with Sonnet 5.5 chosen, three agents ticked as the memory, a question about which agents might clash and the parrot's answer, and a message box" width="300"><br><sub>Ranch Chat in the side panel. The names and the answer are made up.</sub></p>
 
 Click the parrot **Chat** button in the top bar, just before the **+**, to plan with a parrot that already knows what your agents are doing.
+
+- **A side panel you can close, open and resize.** By default Chat opens in the right-hand panel, the one Files and Changes use: click **Chat** again to close it, and drag the divider to make it wider or narrower. Files, Changes and Chat share the panel, so you switch between them with their buttons.
+- **Or a pop-up window.** In Ranch settings (the `···` button), untick **Chat in a side panel** and Chat opens as a window instead.
 
 - **The memory is your living agents, automatically.** Every message reads each running agent's recent screen (the last 80 conversation lines, at most 36,000 characters in all) fresh, so the parrot always knows the state of things now. A new agent joins by itself. Tick or untick the animals above the chat to talk about one agent, a few or all of them (**All** and **None** switch everyone).
 - **Pick the model for the chat:** Fable 5.2, Opus 5.5, Sonnet 5.5 (the default) or Haiku 5.5. It is remembered.
