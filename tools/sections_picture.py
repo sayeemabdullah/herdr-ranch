@@ -168,7 +168,7 @@ def update_pill(pen, x1, y, text="Update to v0.3.0"):
 
 def settings_picture(path, theme="dark", s=2):
     """The "Ranch settings" popup."""
-    w, h = 280, 372
+    w, h = 280, 416
     pop = (92, 27, 80) if theme == "dark" else (222, 232, 200)
     img = Image.new("RGB", (round(w * s), round(h * s)), pop)
     pen = Pen(img, s, theme)
@@ -177,7 +177,7 @@ def settings_picture(path, theme="dark", s=2):
     pen.text(18, 14, "Ranch settings", 13, c["fg"], "Semibold")
     pen.text(18, 34, "Untick what you don't want to see.", 11.5, c["dim"])
     rows = [("Reviewer", "Scout and the PR panel's space", True), ("Servers", "dev servers running in your spaces", True),
-            ("Worktrees", "each repo's worktrees", False), ("Ranch board", "the tree, tasks done today and spend", True),
+            ("Worktrees", "each repo's worktrees", False), ("Ranch board", "the tree, tasks done today and spend", True), ("Chat button", "the owl in the top bar", True),
             ("Version and update button", "bottom right of the window", True)]
     y = 62
     for label, note, on in rows:
@@ -194,6 +194,61 @@ def settings_picture(path, theme="dark", s=2):
     pen.text(46, y + 6, label, 13, c["fg"])
     pen.text(46, y + 24, note, 11, c["dim"])
     pen.text(w - 52, h - 22, "esc close", 11, c["dim"])
+    img.save(path)
+
+
+def chat_picture(path, theme="dark", s=2):
+    """The Ranch Chat window: the parrot, the model, the agents in its memory, one question and its answer."""
+    w, h = 640, 490
+    pop = (92, 27, 80) if theme == "dark" else (222, 232, 200)
+    img = Image.new("RGB", (round(w * s), round(h * s)), pop)
+    pen = Pen(img, s, theme)
+    c = pen.c
+    sel = (106, 37, 96) if theme == "dark" else (157, 184, 120)
+    pen.box(0.5, 0.5, w - 0.5, h - 0.5, 10, outline=c["border"])
+    pen.paste(critter("parrot", "", 40 * s), 16, 14)
+    pen.text(66, 16, "Ranch Chat", 15, c["fg"], "Semibold")
+    pen.text(66, 37, "A parrot that has your living agents' memory. Ask it to plan.", 11.5, c["dim"])
+    x = 16
+    pen.text(x, 70, "Model", 11, c["dim"])
+    x += 44
+    for label, on in (("Fable 5.2", False), ("Opus 5.5", False), ("Sonnet 5.5", True), ("Haiku 5.5", False)):
+        tw = pen.d.textlength(label, font=font(11.5 * s)) / s
+        pen.box(x, 64, x + tw + 18, 88, 6, fill=sel if on else None, outline=c["gold"] if on else c["border"])
+        pen.text(x + 9, 69, label, 11.5, c["fg"] if on else c["muted"])
+        x += tw + 24
+    pen.text(16, 106, "Memory: 3 of 3 agents", 11, c["dim"])
+    pen.text(w - 64, 106, "All   None", 11, c["dim"])
+    x = 16
+    for animal, name in (("sheep", "Basil"), ("rabbit", "Pickle"), ("cow", "Cocoa")):
+        tw = pen.d.textlength(name, font=font(11.5 * s)) / s
+        pen.box(x, 126, x + tw + 40, 152, 6, fill=sel, outline=c["gold"])
+        pen.paste(critter(animal, "", 18 * s), x + 8, 130)
+        pen.text(x + 32, 132, name, 11.5, c["fg"])
+        x += tw + 46
+    pen.d.line([(16 * s, 170 * s), ((w - 16) * s, 170 * s)], fill=tuple(c["border"]), width=max(1, round(s)))
+    # the question, right; the answer, left
+    q = "Which of my agents might clash?"
+    qw = pen.d.textlength(q, font=font(12.5 * s)) / s
+    pen.box(w - 16 - qw - 24, 186, w - 16, 222, 10, fill=sel, outline=c["gold"])
+    pen.text(w - 16 - qw - 12, 196, q, 12.5, c["fg"])
+    lines = ["Basil is editing README.md in docs, and Pickle just finished",
+             "/health in api-server. They touch different files, so no clash",
+             "now. Cocoa's refactor of the auth middleware reads from the",
+             "same config Pickle changed, so merge Pickle's PR first, then",
+             "have Cocoa rebase before it goes further."]
+    box_h = 20 + 18 * len(lines)
+    pen.box(16, 240, 16 + 470, 240 + box_h, 10, outline=c["border"])
+    for i, line in enumerate(lines):
+        pen.text(28, 250 + i * 18, line, 12.5, c["fg"])
+    pen.text(20, 246 + box_h, "Sonnet 5.5 \u00b7 3 agents in the memory", 10.5, c["dim"])
+    # the input row
+    pen.box(16, h - 78, w - 96, h - 40, 8, outline=c["gold"])
+    pen.text(28, h - 67, "Ask about your agents, or plan the next step\u2026", 12.5, c["dim"])
+    pen.box(w - 84, h - 78, w - 16, h - 40, 8, fill=c["gold"])
+    pen.text(w - 66, h - 67, "Send", 12.5, c["on_gold"], "Semibold")
+    pen.text(16, h - 26, "Chat only: it cannot run anything or message your agents.", 10.5, c["dim"])
+    pen.text(w - 56, h - 26, "esc close", 10.5, c["dim"])
     img.save(path)
 
 
@@ -343,6 +398,7 @@ def main():
     standalone(os.path.join(ROOT, "assets", "servers-worktrees.png"))
     settings_picture(os.path.join(ROOT, "assets", "ranch-settings.png"))
     dialog_picture(os.path.join(ROOT, "assets", "worktree-dialog.png"))
+    chat_picture(os.path.join(ROOT, "assets", "ranch-chat.png"))
     toasts_picture(os.path.join(ROOT, "assets", "toasts.png"))
     update_toasts_picture(os.path.join(ROOT, "assets", "update-toasts.png"))
     # the status bar with the Update button, for the README

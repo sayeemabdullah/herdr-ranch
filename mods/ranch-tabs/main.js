@@ -2,6 +2,9 @@ import { View, div, svg, image } from "gpui-kit";
 import { h_flex, ScrollHandle } from "gpui-base";
 import { spaces, panes, agents, run, openOverlay, theme, window, shared, layout, settings } from "herdr";
 
+// Ranch Chat: the parrot button next to the strip, opening the chat window. Hidden from Ranch settings (`ranch.hide.chat`).
+const chatHidden = () => (shared("ranch.hide") ?? {}).chat === true;
+
 function find(node, id) {
   if (node?.id === id) return node;
   for (const child of node?.children ?? []) {
@@ -181,6 +184,11 @@ export default class Tabs extends View {
         .on_size_change((_size, cx) => { if (active >= 0) { this.scroll.scroll_to_item(active); cx.notify(); } })
         .children(shown.map(item)))
       .child(this.strip(t))
+      .when(!chatHidden(), el => el.child(h_flex().id("ranch-chat").h(26).px(8).gap(5).flex_none().items_center().rounded(4).border(2).border_color(t.chrome)
+        .text_size(12).text_color(t.muted).hover(s => s.bg(t.hover).text_color(t.foreground)).cursor_pointer()
+        .tooltip("Ranch Chat: plan with a parrot that knows your agents")
+        .on_mouse_down("left", stop).on_click(() => openOverlay({ mod: "ranch-chat", kind: "dialog", width: 640, height: 720 }))
+        .child(image("mods/flock/sprites/parrot.svg").w(18).h(18).flex_none()).child("Chat")))
       .child(button("tab-new", "+", () => openOverlay({ mod: "new-menu", kind: "popup", width: 250, height: 512 })))
       .when(enabled.includes("files"), el => el.child(panelButton("files", "Files", "mods/files/file.svg")))
       .when(enabled.includes("changes"), el => el.child(panelButton("changes", "Changes", "mods/changes/changes.svg")))
