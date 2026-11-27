@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.7.0
 
 - **Ranch Chat: tone and your own instructions.** A **Style** link in the panel opens five tones (Casual, Friendly, Direct, Formal, Playful) and a box for standing instructions that the parrot follows in every message. They are kept between openings.
 - **Ranch Chat has a close button** (×, top right).
