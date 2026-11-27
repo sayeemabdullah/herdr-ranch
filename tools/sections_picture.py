@@ -216,9 +216,11 @@ def chat_picture(path, theme="dark", s=2):
     pen.text(48, 15, "Ranch Chat", 14, c["fg"], "Semibold")
     label = "Sonnet 5.5 \u25be"
     tw = pen.d.textlength(label, font=font(11.5 * s)) / s
-    pen.box(w - 12 - tw - 16, 14, w - 12, 38, 12, outline=c["border"])
-    pen.text(w - 12 - tw - 8, 19, label, 11.5, c["muted"])
+    pen.box(w - 44 - tw - 16, 14, w - 44, 38, 12, outline=c["border"])
+    pen.text(w - 44 - tw - 8, 19, label, 11.5, c["muted"])
+    pen.text(w - 30, 17, "\u00d7", 17, c["muted"])
     pen.text(12, 52, "Knows 3 of 3 agents \u25be", 11, c["dim"])
+    pen.text(132, 52, "Style \u25be", 11, c["dim"])
     pen.d.ellipse(((w - 84) * s, 55 * s, (w - 76) * s, 63 * s), fill=tuple(c["gold"]))
     pen.text(w - 70, 52, "Reads code", 11, c["fg"])
     pen.d.line([(12 * s, 78 * s), ((w - 12) * s, 78 * s)], fill=tuple(c["border"]), width=max(1, round(s)))

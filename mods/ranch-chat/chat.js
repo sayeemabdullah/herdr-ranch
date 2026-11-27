@@ -10,6 +10,18 @@ export const MODELS = [
 export const DEFAULT_MODEL = "claude-sonnet-5-5";
 export const modelOf = (id) => MODELS.find((m) => m.id === id) ?? MODELS.find((m) => m.id === DEFAULT_MODEL);
 
+// How the parrot talks; the user picks one. Each is one line of the system prompt.
+export const TONES = [
+  { id: "casual", label: "Casual", line: "Sound like a relaxed teammate: simple words, contractions, a light touch." },
+  { id: "friendly", label: "Friendly", line: "Sound warm and encouraging, like a kind colleague, without gushing or filler." },
+  { id: "direct", label: "Direct", line: "Be blunt and efficient: the answer and the reason, no pleasantries, no softening." },
+  { id: "formal", label: "Formal", line: "Sound professional and precise: complete sentences, no slang, no jokes." },
+  { id: "playful", label: "Playful", line: "Be playful and witty, a little parrot humour is welcome, but never at the cost of a clear answer." },
+];
+export const DEFAULT_TONE = "casual";
+export const toneOf = (id) => TONES.find((t) => t.id === id) ?? TONES.find((t) => t.id === DEFAULT_TONE);
+export const INSTRUCTIONS_CAP = 2000; // characters of the user's own instructions sent with each message
+
 export const MEMORY_LINES = 80; // conversation lines read from each agent's screen
 export const MEMORY_CAP = 36000; // characters of memory in all
 export const HISTORY_CAP = 12000; // characters of earlier chat sent back with each message
@@ -65,15 +77,18 @@ export function gitBlock(results) {
 }
 
 /** What the model is told it is: a person-like colleague who talks in plain, short chat messages. */
-export function systemPrompt(memory, count, { code = false } = {}) {
+export function systemPrompt(memory, count, { code = false, tone = DEFAULT_TONE, instructions = "" } = {}) {
+  const mine = String(instructions ?? "").trim().slice(0, INSTRUCTIONS_CAP);
   const who = count === 0
     ? "No agents are in the memory right now, so answer from the question alone."
     : `Below is what ${count === 1 ? "one coding agent" : `${count} coding agents`} on the user's ranch is doing: its space, folder, git state and recent screen. Use it to plan, compare, spot clashes and suggest next steps. ${code ? "You can also read the code in those folders and run read-only git (log, diff, show, blame) to check before you answer; do that when the answer depends on what the code really says, and name the file." : "You cannot open files, so say so when the memory does not tell you something."}`;
   return [
     "You are Ranch Chat, a parrot who works beside the user like a sharp teammate, helping them plan with their coding agents.",
     "Write the way a person writes in a chat app: plain text only. No markdown at all: no asterisks, no backticks, no headings, no tables, no bullet symbols. Say file names and commands as they are.",
-    "Keep it short and talk like a colleague. Open with the answer. Use two to five short paragraphs separated by a blank line, each one idea. Call agents by their names. If you list things, put each on its own line starting with a number and a dot, three at most.",
+    `Tone: ${toneOf(tone).line}`,
+    "Keep it short. Open with the answer. Use two to five short paragraphs separated by a blank line, each one idea. Call agents by their names. If you list things, put each on its own line starting with a number and a dot, three at most.",
     "Be concrete and honest. If you do not know, or cannot see it, say so in a line instead of guessing. Never repeat the question back. You cannot change files, run anything that writes, or message the agents.",
+    mine ? `\nThe user's own standing instructions. Follow them in every answer, except that you still never use markdown and never claim to change anything:\n${mine}` : "",
     "",
     who,
     memory ? `\n${memory}` : "",

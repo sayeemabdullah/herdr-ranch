@@ -70,6 +70,13 @@ class SpriteTests(unittest.TestCase):
             for pose in ("-blocked", "-done"):
                 self.assertNotEqual(base, read(os.path.join(SPRITES, f"{i}{pose}.svg")), f"{i}{pose}")
 
+    def test_scout_wags_in_every_state(self):
+        pairs = [("", "-wag"), ("-work", "-2"), ("-blocked", "-blocked-2"), ("-done", "-done-2")]
+        for one, two in pairs:
+            self.assertNotEqual(read(os.path.join(SPRITES, f"sheepdog{one}.svg")), read(os.path.join(SPRITES, f"sheepdog{two}.svg")), f"{one} / {two}")
+        stand, wag = sprites.pose_grids("sheepdog")[""], sprites.scout_wag_grids()["-wag"]
+        self.assertEqual(stand[:12], wag[:12])  # only the tail end moves, the head and body stay
+
     def test_every_server_critter_has_its_standing_working_resting_and_red_badge_files(self):
         for name in sprites.CRITTERS:
             self.assertNotIn(name, sprites.ANIMALS)

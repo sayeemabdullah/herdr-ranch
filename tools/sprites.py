@@ -470,7 +470,14 @@ def dragon(c, ph):
 
 def sheepdog(c, ph):
     feet(c, ph, "W", "W", dx=3.2)
-    c.ell(19.6 + (1 if ph else 0), 18.8, 2.4, 1.4, "D")
+    # The tail has two positions, up and out: `c.tail` picks one (else the step phase does), so Scout can wag when still.
+    out = ph if getattr(c, "tail", None) is None else c.tail
+    if out:
+        c.ell(20.6, 19.4, 2.4, 1.1, "D")
+        c.dot(22, 19, "W")
+    else:
+        c.ell(20.2, 16.8, 1.2, 2.4, "D")
+        c.dot(20, 14.6, "W")
     c.ell(12, 18.8, 5, 3.2, "D")
     c.shade("D", "d")
     c.ell(12, 10.2, 6.6, 6, "D")
@@ -594,8 +601,9 @@ ANIMALS = {
 }
 
 
-def draw(name, ph=0, bob=False, lie=False, closed=False, lift=0):
+def draw(name, ph=0, bob=False, lie=False, closed=False, lift=0, tail=None):
     c = Canvas()
+    c.tail = tail
     c.lie = lie
     c.closed = closed
     c.dy = (2 - lift) if lie else (1 if bob else 0)
@@ -625,6 +633,12 @@ def pose_grids(name):
         "-blocked": paint(stand, BLOCKED_BADGE),
         "-done": paint(stand, DONE_BADGE),
     }
+
+
+def scout_wag_grids():
+    """Scout's extra poses: standing with the tail in its other position, so it wags in every state."""
+    out = draw("sheepdog", tail=1)
+    return {"-wag": out, "-blocked-2": paint(out, BLOCKED_BADGE), "-done-2": paint(out, DONE_BADGE)}
 
 
 def swap_colours(g, swaps):
@@ -934,6 +948,8 @@ def main():
             for suffix, grid in poses.items():
                 write(os.path.join(SPRITES, f"{name}-alt{suffix}.svg"),
                       render(swap_colours(grid, ALT_SWAPS[name]), DISPLAY))
+    for suffix, grid in scout_wag_grids().items():
+        write(os.path.join(SPRITES, f"sheepdog{suffix}.svg"), render(grid, DISPLAY))
     for name in CRITTERS:
         for suffix, grid in pose_grids(name).items():
             write(os.path.join(SPRITES, f"{name}{suffix}.svg"), render(grid, DISPLAY))

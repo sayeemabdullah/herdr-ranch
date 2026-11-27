@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { MODELS, DEFAULT_MODEL, modelOf, screenTail, remembered, buildMemory, systemPrompt, buildPrompt, claudeArgs, parseReply, plainChat, splitChunks, typingMs, gitBlock, GIT_LOOKS } from "../mods/ranch-chat/chat.js";
+import { MODELS, DEFAULT_MODEL, modelOf, screenTail, remembered, buildMemory, systemPrompt, buildPrompt, claudeArgs, parseReply, plainChat, splitChunks, typingMs, gitBlock, GIT_LOOKS, TONES, toneOf, DEFAULT_TONE, INSTRUCTIONS_CAP } from "../mods/ranch-chat/chat.js";
 
 test("an unknown model falls back to the default", () => {
   assert.equal(modelOf("nope").id, DEFAULT_MODEL);
@@ -63,6 +63,17 @@ test("systemPrompt asks for plain chat, and for code reading only when allowed",
   assert.match(systemPrompt("", 1), /No markdown at all/);
   assert.match(systemPrompt("", 1, { code: true }), /read the code in those folders/);
   assert.doesNotMatch(systemPrompt("", 1), /read the code/);
+});
+
+test("the tone and the user's own instructions are in the system prompt", () => {
+  assert.match(systemPrompt("", 1, { tone: "direct" }), /Tone: Be blunt/);
+  assert.match(systemPrompt("", 1), new RegExp(`Tone: ${toneOf(DEFAULT_TONE).line.slice(0, 20)}`));
+  assert.match(systemPrompt("", 1, { tone: "nope" }), /Tone: Sound like a relaxed teammate/);
+  assert.equal(TONES.length, 5);
+  const text = systemPrompt("## A", 1, { instructions: "  Always answer in Bengali.  " });
+  assert.match(text, /standing instructions[\s\S]*\nAlways answer in Bengali\.\n/);
+  assert.doesNotMatch(systemPrompt("", 1, { instructions: "   " }), /standing instructions/);
+  assert.ok(systemPrompt("", 1, { instructions: "x".repeat(INSTRUCTIONS_CAP + 500) }).length < 6000);
 });
 
 test("plainChat removes markdown the way a chat message would not have it", () => {

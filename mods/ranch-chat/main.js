@@ -4,15 +4,17 @@
 // the parrot may read with read-only tools. The answer is one `claude -p` call with the model you pick. It never
 // writes anything and never sends a word to an agent.
 
-import { View, div, image } from "gpui-kit";
-import { v_flex, h_flex, InputState, Input, ScrollHandle } from "gpui-base";
-import { agents, panes, theme, shared, exec, hc } from "herdr";
-import { MODELS, modelOf, remembered, buildMemory, gitBlock, GIT_LOOKS, systemPrompt, buildPrompt, claudeArgs, parseReply, splitChunks, typingMs } from "./chat.js";
+import { View, div, image, svg } from "gpui-kit";
+import { v_flex, h_flex, InputState, Input, TextareaState, Textarea, ScrollHandle } from "gpui-base";
+import { agents, panes, theme, shared, exec, hc, run, props, closeOverlay } from "herdr";
+import { MODELS, TONES, toneOf, modelOf, remembered, buildMemory, gitBlock, GIT_LOOKS, systemPrompt, buildPrompt, claudeArgs, parseReply, splitChunks, typingMs } from "./chat.js";
 
 const MODEL_KEY = "ranch.chat.model";
 const OFF_KEY = "ranch.chat.off";
 const LOG_KEY = "ranch.chat.log";
 const CODE_KEY = "ranch.chat.code";
+const TONE_KEY = "ranch.chat.tone";
+const INSTRUCTIONS_KEY = "ranch.chat.instructions";
 const KEEP = 40; // messages kept between openings
 const SUGGESTIONS = ["What is everyone working on?", "Which of my agents might clash?", "What should I do next?"];
 const titleCase = (s) => (s ? s[0].toUpperCase() + s.slice(1) : s);
@@ -37,6 +39,11 @@ export default class RanchChat extends View {
     this.typing = false; // the reply is arriving, message by message
     this.openModel = false;
     this.openMem = false;
+    this.openStyle = false;
+    this.tone = toneOf(load(TONE_KEY, null)).id;
+    this.instructions = String(load(INSTRUCTIONS_KEY, "") ?? "");
+    this.area = TextareaState.new({ placeholder: "Your instructions, for example: answer in short sentences, always name the file, reply in Bengali.", value: this.instructions, rows: 4 });
+    this.area.on("change", () => { this.instructions = this.area.value(); save(INSTRUCTIONS_KEY, this.instructions); });
     this.scroll = ScrollHandle.new();
     this.follow = false; // the newest row should be brought into view (a plain scroll area only has scroll_to_item)
     this.settled = new Set(); // rows that have faded in; a row not in it is drawn faint and a little low, then moves up
@@ -89,6 +96,8 @@ export default class RanchChat extends View {
     cx.notify();
     const model = this.model;
     const code = this.code;
+    const tone = this.tone;
+    const instructions = this.instructions;
     cx.spawn(async (cx2) => {
       let reply;
       let count = 0;
@@ -120,7 +129,7 @@ export default class RanchChat extends View {
         const looksAtCode = code && dirs.length > 0;
         this.phase = "Thinking…";
         cx2.notify();
-        const system = systemPrompt(buildMemory(blocks), live.length, { code: looksAtCode });
+        const system = systemPrompt(buildMemory(blocks), live.length, { code: looksAtCode, tone, instructions });
         const r = await exec("claude", claudeArgs({ model, system, prompt: buildPrompt(before, question), code: looksAtCode, dirs }), { timeout: 300000 });
         reply = parseReply(r);
       } catch (error) {
@@ -230,7 +239,11 @@ export default class RanchChat extends View {
         .child(h_flex().id("model-pick").px(8).h(24).gap(4).items_center().flex_none().rounded(12).border(1).border_color(this.openModel ? t.accent : t.border)
           .text_size(11.5).text_color(t.muted).cursor_pointer().hover((el) => el.bg(t.hover))
           .on_click((_e, cx2) => { this.openModel = !this.openModel; cx2.notify(); })
-          .child(modelOf(this.model).label).child(div().text_size(9).child(this.openModel ? "▴" : "▾"))))
+          .child(modelOf(this.model).label).child(div().text_size(9).child(this.openModel ? "▴" : "▾")))
+        .child(div().id("chat-close").size(24).flex().items_center().justify_center().flex_none().rounded(12).cursor_pointer()
+          .text_color(t.muted).hover((el) => el.bg(t.hover).text_color(t.foreground)).tooltip("Close the chat")
+          .on_click(() => { const ov = props()?.overlay; if (ov) closeOverlay(ov); else run("layout.hide", { id: "panel" }); })
+          .child(svg("mods/pane/close.svg").size(12))))
       .when(this.openModel, (el) => el.child(v_flex().gap(2).p(4).rounded(8).border(1).border_color(t.border).bg(t.background)
         .children(MODELS.map((m) => h_flex().id(`model-${m.id}`).h(28).px(8).items_center().rounded(6).text_size(12)
           .text_color(m.id === this.model ? t.foreground : t.muted).bg(m.id === this.model ? t.selected : t.background)
@@ -241,6 +254,9 @@ export default class RanchChat extends View {
         .child(h_flex().id("mem-toggle").gap(4).items_center().cursor_pointer().text_size(11).text_color(t.dim).hover((el) => el.text_color(t.foreground))
           .on_click((_e, cx2) => { this.openMem = !this.openMem; cx2.notify(); })
           .child(`Knows ${memoryText}`).child(div().text_size(9).child(this.openMem ? "▴" : "▾")))
+        .child(h_flex().id("style-toggle").gap(4).items_center().cursor_pointer().text_size(11).text_color(t.dim).hover((el) => el.text_color(t.foreground))
+          .on_click((_e, cx2) => { this.openStyle = !this.openStyle; cx2.notify(); })
+          .child("Style").child(div().text_size(9).child(this.openStyle ? "▴" : "▾")))
         .child(div().flex_1())
         .child(h_flex().id("code-toggle").gap(5).items_center().cursor_pointer().text_size(11)
           .text_color(this.code ? t.foreground : t.dim).hover((el) => el.text_color(t.foreground))
@@ -248,6 +264,15 @@ export default class RanchChat extends View {
           .on_click((_e, cx2) => { this.code = !this.code; save(CODE_KEY, this.code); cx2.notify(); })
           .child(div().size(8).flex_none().rounded(4).bg(this.code ? t.accent : t.border))
           .child("Reads code")))
+      .when(this.openStyle, (el) => el.child(v_flex().gap(6).p(8).rounded(8).border(1).border_color(t.border).bg(t.background)
+        .child(div().text_size(11).text_color(t.dim).child("Tone"))
+        .child(h_flex().gap(5).flex_wrap().children(TONES.map((o) => h_flex().id(`tone-${o.id}`).px(9).h(24).items_center().flex_none().rounded(12).border(1).text_size(11.5).cursor_pointer()
+          .border_color(o.id === this.tone ? t.accent : t.border).bg(o.id === this.tone ? t.selected : t.background)
+          .text_color(o.id === this.tone ? t.foreground : t.muted).hover((e) => e.bg(t.hover))
+          .on_click((_e, cx2) => { this.tone = o.id; save(TONE_KEY, o.id); cx2.notify(); })
+          .child(o.label))))
+        .child(div().text_size(11).text_color(t.dim).pt(4).child("Your instructions (used in every message)"))
+        .child(Textarea.new(this.area).w_full().px(8).py(6).rounded(6).border(1).border_color(t.border).bg(t.chrome).text_size(12).text_color(t.foreground))))
       .when(this.openMem, (el) => el.child(v_flex().gap(6)
         .child(h_flex().gap(5).flex_wrap().children(live.map(chip)))
         .when(live.length > 1, (e2) => e2.child(h_flex().gap(10)

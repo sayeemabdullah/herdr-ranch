@@ -88,7 +88,7 @@ Looking at an animal (focusing its pane) resets it to "Resting". Sub-agents show
 
 - **Show one state, waiting first.** The sort button has Priority (needs you, then done, working, resting), Waiting longest first, and Grouped by space, plus a **Show** list: Everyone, Needs you, Working, Done or Resting. A chip in the header says what is filtered; click it to clear.
 - **"N needs you" in the status bar** is a red button. Click it to jump to the next agent waiting for you, and again for the one after.
-- **Scout while reviewing.** Its card in the Reviewer section lights up with a coloured edge and "Reviewing" while it works.
+- **Scout while reviewing.** Its card in the Reviewer section lights up with a coloured edge and "Reviewing" while it works. Scout always wags its tail, whether it is waiting, reviewing, done or needs you.
 - **Needs-you bell.** Rings with a red count in the Agents header. Click it for every waiting animal across all spaces, longest wait first; click a row to jump to that agent.
 - **Find.** The magnifier filters animals by name, animal, space, program or state; Enter jumps to the first match.
 
@@ -247,6 +247,8 @@ Click the parrot **Chat** button in the top bar, just before the **+**, to plan 
 - **It talks like a person.** Plain chat, no formatting marks: short messages that arrive one after another with a "typing…" pause, and the view follows the newest message, which fades in and rises into place.
 - **It knows your living agents, automatically.** Every message reads each running agent's recent screen (the last 80 conversation lines), its space and folder, and its git: the branch, what changed and the last commits. A new agent joins by itself. Click **Knows 6 of 8 agents** to tick or untick the animals, so you can talk about one, a few or all (**All** and **None** switch everyone).
 - **It can read your code.** With **Reads code** on (the default), it can open files and search the code of agents on this computer and run read-only git (`log`, `diff`, `show`, `blame`), so it answers from what the code really says and names the file. For an agent on another machine it sees the screen, the git state and the uncommitted changes, but cannot open its files. Switch **Reads code** off and it only sees the screens and git summaries.
+- **Set the tone and your own instructions.** Click **Style** to pick how it talks (Casual, Friendly, Direct, Formal or Playful) and to write standing instructions, for example "answer in short sentences, always name the file, reply in Bengali". They are saved and used in every message. The parrot still never uses markdown and never changes anything, whatever the instructions say.
+- **Close it** with the **×** at the top right of the panel (or the Chat button again).
 - **Pick the model for the chat:** the small button at the top right (Fable 5.2, Opus 5.5, Sonnet 5.5 (the default) or Haiku 5.5). It is remembered.
 - **Ask anything for planning:** what everyone is working on, which agents might clash, what to do next, how to split a task. Three starter questions are one click away. The chat is kept between openings; **Clear** empties it.
 - **It only reads and talks.** Its only tools are reading files and read-only git, so it cannot change files, run commands or message your agents. Use Memory share to pass something to an agent.
